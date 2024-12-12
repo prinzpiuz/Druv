@@ -83,7 +83,7 @@ echo -e "${GREEN}-------------------------------------------------Done----------
 
 #Build media directory structure
 
-    sudo mkdir -p /data/{torrents/{books,movies,music,tv},usenet/{incomplete,complete/{books,movies,music,tv}},media/{books,movies,music,tv}}
+    sudo mkdir -p /data/{torrents/{books,movies,music,tv},usenet/{incomplete,complete/{books,movies,music,tv}},media/{books,movies,music,tv,personal_tv,personal_movie}}
     sudo mkdir -p /configs/{qbit,qbit_manage,radarr,sonarr,prowlarr,jackett,bazarr,recyclarr,jellyseerr,jellyfin,emby,sabnzbd,homepage,scrutiny,myspeed,qbitrr/qBitManager,gluetun,tailscale/var/lib,tailscale/state}
     sudo mkdir -p /jellyfin_cache
     sudo mkdir -p /influxdb

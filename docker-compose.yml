@@ -184,7 +184,7 @@ services:
       - TZ=Asia/Kolkata
     volumes:
       - /configs/prowlarr:/config
-    restart: unless-stopped
+    restart: always
     network_mode: service:gluetun
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=1
@@ -203,7 +203,7 @@ services:
     volumes:
       - /configs/jackett:/config
       - /data:/downloads
-    restart: unless-stopped
+    restart: always
     depends_on:
       gluetun:
         condition: service_healthy
@@ -214,7 +214,7 @@ services:
     user: 1000:1000
     volumes:
       - /configs/recyclarr:/config
-    restart: unless-stopped
+    restart: always
     environment:
       CRON_SCHEDULE: "* * * * *"
       TZ: Asia/Kolkata
@@ -224,7 +224,7 @@ services:
     image: ghcr.io/hotio/bazarr:latest
     container_name: bazarr
     pull_policy: always
-    restart: unless-stopped
+    restart: always
     logging:
       driver: json-file
     ports:
@@ -256,7 +256,7 @@ services:
       - /data/media:/media
     ports:
       - 8096:8096
-    restart: unless-stopped
+    restart: always
     networks:
       arr:
         ipv4_address: ${JELLYFIN_IPV4_ADDR}
@@ -295,56 +295,24 @@ services:
       - no-new-privileges:true
     networks:
       - arr
-  scrutiny_influxdb:
-    image: influxdb:2.2
-    container_name: scrutiny_influxdb
-    pull_policy: always
-    ports:
-      - 8086:8086
-    volumes:
-      - /influxdb:/var/lib/influxdb2
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8086/health" ]
-      interval: 5s
-      timeout: 10s
-      retries: 20
-  scrutiny_web:
-    image: ghcr.io/analogj/scrutiny:master-web
-    container_name: scrutiny_web
-    pull_policy: always
-    ports:
-      - 8081:8081
-    volumes:
-      - /configs/scrutiny:/opt/scrutiny/config
-    restart: unless-stopped
-    environment:
-      SCRUTINY_WEB_INFLUXDB_HOST: scrutiny_influxdb
-    depends_on:
-      scrutiny_influxdb:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8081/api/health" ]
-      interval: 5s
-      timeout: 10s
-      retries: 20
-      start_period: 10s
-  scrutiny_collector:
-    image: ghcr.io/analogj/scrutiny:master-collector
-    container_name: scrutiny_collector
+  scrutiny:
+    image: ghcr.io/analogj/scrutiny:master-omnibus
+    container_name: scrutiny
     pull_policy: always
     cap_add:
       - SYS_RAWIO
+    ports:
+      - 8081:8081 # webapp
+      - 8086:8086 # influxDB admin
     volumes:
       - /run/udev:/run/udev:ro
+      - /configs/scrutiny:/opt/scrutiny/config
+      - /influxdb:/var/lib/influxdb2
     restart: unless-stopped
-    environment:
-      COLLECTOR_API_ENDPOINT: http://scrutiny_web:8081
-    depends_on:
-      scrutiny_web:
-        condition: service_healthy
     devices:
       - /dev/sda
+    networks:
+      - arr
   dockerproxy:
     image: ghcr.io/tecnativa/docker-socket-proxy:latest
     container_name: dockerproxy
@@ -372,7 +340,7 @@ services:
       - 3000:3000
     volumes:
       - /configs/homepage:/app/config
-    restart: unless-stopped
+    restart: always
     networks:
       - arr
   myspeed:
@@ -381,11 +349,28 @@ services:
     pull_policy: always
     volumes:
       - /configs/myspeed:/myspeed/data
-    restart: unless-stopped
+    restart: always
     network_mode: service:gluetun
     depends_on:
       gluetun:
         condition: service_healthy
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    ports:
+      - 8082:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=Asia/Kolkata
+      - NO_COLOR=true
+      - WATCHTOWER_SCHEDULE=0 0 19 * * *
+      - WATCHTOWER_INCLUDE_STOPPED=true
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+      - WATCHTOWER_HTTP_API_UPDATE=true
+      - WATCHTOWER_HTTP_API_METRICS=true
+      - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_HTTP_API_TOKEN}
+      - WATCHTOWER_HTTP_API_PERIODIC_POLLS=true
 
 networks:
   arr:
