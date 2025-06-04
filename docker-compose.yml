@@ -59,6 +59,22 @@ services:
     depends_on:
       gluetun:
         condition: service_healthy
+  purgarr:
+    image: ghcr.io/steveharsant/purgarr:latest
+    container_name: purgarr
+    environment:
+      - TORRENT_AGE=30
+      - QBIT_URL=${QBIT_TORRENT_IPV4_ADDR}:8080
+      - QBIT_PASSWORD=${QBIT_PASSWORD}
+      - QBIT_USER=${QBIT_USER}
+      - SONARR_API_KEY=${SONARR_API_KEY}
+      - SONARR_URL=${SONARR_IPV4_ADDR}:8989
+      - RADARR_API_KEY=${RADARR_API_KEY}
+      - RADARR_URL=${RADARR_IPV4_ADDR}:7878
+    pull_policy: always
+    restart: always
+    depends_on:
+      - qbittorrent
   qbit_manage:
     image: ghcr.io/stuffanthings/qbit_manage:latest
     container_name: qbit_manage
@@ -154,7 +170,26 @@ services:
     networks:
       arr:
         ipv4_address: ${SONARR_IPV4_ADDR}
-
+  readarr:
+    image: ghcr.io/hotio/readarr
+    container_name: readarr
+    pull_policy: always
+    restart: unless-stopped
+    ports:
+      - 8787:8787
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - UMASK=002
+      - TZ=Asia/Kolkata
+    volumes:
+      - /configs/readarr:/config
+      - /data:/data
+    depends_on:
+      - gluetun
+    networks:
+      arr:
+        ipv4_address: ${READARR_IPV4_ADDR}
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
