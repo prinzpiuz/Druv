@@ -170,6 +170,16 @@ services:
     networks:
       arr:
         ipv4_address: ${SONARR_IPV4_ADDR}
+  swurApp:
+    image: owlcaribou/swurapp
+    container_name: sonarrWatchUntilRelease
+    restart: unless-stopped
+    pull_policy: always
+    environment:
+        - API_KEY=${SONARR_API_KEY}
+        - BASE_URL=http://${SONARR_IPV4_ADDR}:8989
+        - DELAY_IN_MINUTES=60
+        - IGNORE_TAG_NAME=ignore   
   readarr:
     image: ghcr.io/hotio/readarr
     container_name: readarr
@@ -190,6 +200,20 @@ services:
     networks:
       arr:
         ipv4_address: ${READARR_IPV4_ADDR}
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: audiobookshelf
+    pull_policy: always
+    restart: unless-stopped
+    ports:
+      - 8585:80
+    volumes:
+      - /data/media/books:/audiobooks
+      - /data/media/books:/podcasts
+      - /configs/audiobookshelf:/config
+      - /data/media/books/audiobookshelf:/metadata
+    environment:
+      - TZ=Asia/Kolkata
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
