@@ -17,10 +17,10 @@ echo "Starting Docker Compose services..."
 if [ "$1" == "--all" ]; then
     echo "Rebuilding all services..."
     docker system prune -a -f
-    docker network create --subnet=172.18.0.0/24 arr
+    docker network create --subnet=172.18.0.0/24 homelab
 fi
 
 
-docker-compose --env-file=.env up -d --remove-orphans --build --force-recreate
+docker compose --env-file=.env up -d --remove-orphans --build --force-recreate
 
 echo "Docker Compose services down and restarted."

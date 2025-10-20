@@ -1,0 +1,62 @@
+name: Media Server
+services:
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: audiobookshelf
+    pull_policy: always
+    restart: unless-stopped
+    ports:
+      - 8585:80
+    volumes:
+      - /data/media/books:/audiobooks
+      - /data/media/books:/podcasts
+      - /configs/audiobookshelf:/config
+      - /data/media/books/audiobookshelf:/metadata
+    environment:
+      - TZ=Asia/Kolkata
+    env_file:
+      - .env
+
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: jellyfin
+    pull_policy: always
+    environment:
+      - UID=1000
+      - GID=1000
+      - TZ=Asia/Kolkata
+    volumes:
+      - /configs/jellyfin:/config
+      - /data/media:/media
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+    ports:
+      - 8096:8096
+    restart: always
+    env_file:
+      - .env
+    networks:
+      homelab:
+        ipv4_address: ${JELLYFIN_IPV4_ADDR}
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    pull_policy: always
+    user: 1000:1000
+    environment:
+      - LOG_LEVEL=debug
+      - TZ=Asia/Kolkata
+    volumes:
+      - /configs/jellyseerr:/app/config
+    restart: always
+    network_mode: service:gluetun
+    env_file:
+      - .env
+    depends_on:
+      gluetun:
+        condition: service_healthy
+  
+
+# networks:
+#   arr:
+#     external: true

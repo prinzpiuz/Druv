@@ -1,0 +1,323 @@
+name: arr Services
+services:
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    pull_policy: always
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - /configs/gluetun:/gluetun
+    environment:
+      - TZ=Asia/Kolkata
+      - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
+      - VPN_TYPE=${VPN_TYPE}
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
+      - SERVER_CITIES=${SERVER_CITIES}
+      - UPDATER_PERIOD=24h
+    restart: always
+    ports:
+      - 54509:54509
+      - 54509:54509/udp
+      - 51820:51820
+      - 51820:51820/udp
+      - 8080:8080 # qbittorrent
+      - 9696:9696 # Prowlarr
+      - 9117:9117 # Jackett
+      - 5216:5216 # myspeed
+      - 8000:8000 # gluetun
+      - 5055:5055 # jellyseer
+      - 6969:6969 # whisparr
+    env_file:
+      - .env
+    networks:
+      homelab:
+        ipv4_address: ${GLUETUN_IPV4_ADDR}
+  qbittorrent:
+    image: ghcr.io/hotio/qbittorrent
+    container_name: qbittorrent
+    pull_policy: always
+    restart: always
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - UMASK=002
+      - TZ=Asia/Kolkata
+      - WEBUI_PORTS=8080/tcp,8080/udp
+      - PRIVOXY_ENABLED=false
+      - UNBOUND_ENABLED=false
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv6.conf.all.disable_ipv6=1
+    volumes:
+      - /configs/qbit:/config
+      - /data:/data
+    network_mode: service:gluetun
+    env_file:
+      - .env
+    depends_on:
+      gluetun:
+        condition: service_healthy
+  purgarr:
+    image: ghcr.io/steveharsant/purgarr:latest
+    container_name: purgarr
+    environment:
+      - TORRENT_AGE=30
+      - QBIT_URL=${QBIT_TORRENT_IPV4_ADDR}:8080
+      - QBIT_PASSWORD=${QBIT_PASSWORD}
+      - QBIT_USER=${QBIT_USER}
+      - SONARR_API_KEY=${SONARR_API_KEY}
+      - SONARR_URL=${SONARR_IPV4_ADDR}:8989
+      - RADARR_API_KEY=${RADARR_API_KEY}
+      - RADARR_URL=${RADARR_IPV4_ADDR}:7878
+    pull_policy: always
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - qbittorrent
+  qbit_manage:
+    image: ghcr.io/stuffanthings/qbit_manage:latest
+    container_name: qbit_manage
+    pull_policy: always
+    volumes:
+      - /configs/qbit_manage:/config:rw
+      - /data:/data:rw
+      - /data/torrents:/data/torrents:rw
+    environment:
+      - QBT_RUN=false
+      - QBT_SCHEDULE=1440
+      - QBT_CONFIG=config.yml
+      - QBT_LOGFILE=activity.log
+      - QBT_CROSS_SEED=true
+      - QBT_RECHECK=true
+      - QBT_CAT_UPDATE=true
+      - QBT_TAG_UPDATE=true
+      - QBT_REM_UNREGISTERED=false
+      - QBT_REM_ORPHANED=false
+      - QBT_TAG_TRACKER_ERROR=true
+      - QBT_TAG_NOHARDLINKS=true
+      - QBT_SHARE_LIMITS=false
+      - QBT_SKIP_CLEANUP=false
+      - QBT_DRY_RUN=false
+      - QBT_LOG_LEVEL=INFO
+      - QBT_DIVIDER==
+      - QBT_WIDTH=100
+    restart: unless-stopped
+    depends_on:
+      - qbittorrent
+    env_file:
+      - .env
+    networks:
+      - homelab
+      
+  radarr:
+    image: ghcr.io/hotio/radarr:latest
+    container_name: radarr
+    pull_policy: always
+    restart: unless-stopped
+    logging:
+      driver: json-file
+    ports:
+      - 7878:7878
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /configs/radarr:/config
+      - /data:/data
+    depends_on:
+      - gluetun
+    env_file:
+      - .env
+    networks:
+      homelab:
+        ipv4_address: ${RADARR_IPV4_ADDR}
+  sonarr:
+    image: ghcr.io/hotio/sonarr:latest
+    container_name: sonarr
+    pull_policy: always
+    restart: unless-stopped
+    logging:
+      driver: json-file
+    ports:
+      - 8989:8989
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /configs/sonarr:/config
+      - /data:/data
+    depends_on:
+      - gluetun
+    env_file:
+      - .env
+    networks:
+      homelab:
+        ipv4_address: ${SONARR_IPV4_ADDR}
+  swurApp:
+    image: owlcaribou/swurapp
+    container_name: sonarrWatchUntilRelease
+    restart: unless-stopped
+    pull_policy: always
+    env_file:
+      - .env
+    environment:
+        - API_KEY=${SONARR_API_KEY}
+        - BASE_URL=http://${SONARR_IPV4_ADDR}:8989
+        - DELAY_IN_MINUTES=60
+        - IGNORE_TAG_NAME=ignore   
+  readarr:
+    image: ghcr.io/hotio/readarr
+    container_name: readarr
+    pull_policy: always
+    restart: unless-stopped
+    ports:
+      - 8787:8787
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - UMASK=002
+      - TZ=Asia/Kolkata
+    volumes:
+      - /configs/readarr:/config
+      - /data:/data
+    depends_on:
+      - gluetun
+    env_file:
+      - .env
+    networks:
+      homelab:
+        ipv4_address: ${READARR_IPV4_ADDR}
+        
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    pull_policy: always
+    environment:
+      - LOG_LEVEL=info
+      - LOG_HTML=false
+      - TZ=Asia/Kolkata
+    ports:
+      - 8191:8191
+    restart: unless-stopped
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+    env_file:
+      - .env
+    networks:
+      homelab:
+        ipv4_address: ${FLARESOLVERR_IPV4_ADDR}
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    pull_policy: always
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+    volumes:
+      - /configs/prowlarr:/config
+    restart: always
+    network_mode: service:gluetun
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+    env_file:
+      - .env
+    depends_on:
+      gluetun:
+        condition: service_healthy
+  jackett:
+    image: lscr.io/linuxserver/jackett:latest
+    container_name: jackett
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+      - AUTO_UPDATE=true
+    network_mode: service:gluetun
+    volumes:
+      - /configs/jackett:/config
+      - /data:/downloads
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      gluetun:
+        condition: service_healthy
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr:latest
+    container_name: recyclarr
+    pull_policy: always
+    user: 1000:1000
+    volumes:
+      - /configs/recyclarr:/config
+    restart: always
+    environment:
+      CRON_SCHEDULE: "* * * * *"
+      TZ: Asia/Kolkata
+    env_file:
+      - .env
+    networks:
+      - homelab
+  bazarr:
+    image: ghcr.io/hotio/bazarr:latest
+    container_name: bazarr
+    pull_policy: always
+    restart: always
+    logging:
+      driver: json-file
+    ports:
+      - 6767:6767
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /configs/bazarr:/config
+      - /data/media:/data/media
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    env_file:
+      - .env
+    networks:
+      homelab:
+        ipv4_address: ${BAZARR_IPV4_ADDR}
+
+  unpackerr:
+    image: golift/unpackerr
+    container_name: unpackerr
+    pull_policy: always
+    volumes:
+      - /data:/downloads
+    restart: always
+    user: 1000:1000
+    environment:
+      - TZ=Asia/Kolkata
+      - UN_LOG_FILE=/downloads/unpackerr.log
+      - UN_SONARR_0_URL=http://${SONARR_IPV4_ADDR}:8989
+      - UN_SONARR_0_API_KEY=${SONARR_API_KEY}
+      - UN_RADARR_0_URL=http://${RADARR_IPV4_ADDR}:7878
+      - UN_RADARR_0_API_KEY=${RADARR_API_KEY}
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - .env
+    networks:
+      - homelab
+  
+# networks:
+#   arr:
+#     external: true

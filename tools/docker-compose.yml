@@ -1,0 +1,12 @@
+name: Tools
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    restart: unless-stopped
+    pull_policy: always
+    ports:
+        - 6333:6333
+    volumes:
+        - /data/qdrant_storage:/qdrant/storage:z
+    
