@@ -23,6 +23,7 @@ services:
       - /configs/scrutiny:/opt/scrutiny/config
     environment:
       SCRUTINY_WEB_INFLUXDB_HOST: influxdb
+      SCRUTINY_WEB_INFLUXDB_PORT: 8086
     depends_on:
       influxdb:
         condition: service_healthy
@@ -43,7 +44,8 @@ services:
       - /run/udev:/run/udev:ro
     environment:
       COLLECTOR_API_ENDPOINT: 'http://scrutiny_web:8081'
-      COLLECTOR_HOST_ID: 'scrutiny-collector-hostname'
+      COLLECTOR_HOST_ID: 'HomeLab'
+      COLLECTOR_RUN_STARTUP: true
     depends_on:
       scrutiny_web:
         condition: service_healthy
@@ -51,6 +53,7 @@ services:
       - .env
     devices:
       - /dev/sda
+      - /dev/sdb
   dockerproxy:
     image: ghcr.io/tecnativa/docker-socket-proxy:latest
     container_name: dockerproxy
@@ -121,15 +124,15 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - TZ=Asia/Kolkata
-      - NO_COLOR=true
-      - WATCHTOWER_SCHEDULE=0 0 19 * * *
-      - WATCHTOWER_INCLUDE_STOPPED=true
-      - WATCHTOWER_INCLUDE_RESTARTING=true
-      - WATCHTOWER_HTTP_API_UPDATE=true
-      - WATCHTOWER_HTTP_API_METRICS=true
-      - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_HTTP_API_TOKEN}
-      - WATCHTOWER_HTTP_API_PERIODIC_POLLS=true
+      TZ: Asia/Kolkata
+      NO_COLOR: true
+      WATCHTOWER_SCHEDULE: 0 0 19 * * *
+      WATCHTOWER_INCLUDE_STOPPED: true
+      WATCHTOWER_INCLUDE_RESTARTING: true
+      WATCHTOWER_HTTP_API_UPDATE: true
+      WATCHTOWER_HTTP_API_METRICS: true
+      WATCHTOWER_HTTP_API_TOKEN: ${WATCHTOWER_HTTP_API_TOKEN}
+      WATCHTOWER_HTTP_API_PERIODIC_POLLS: true
     env_file:
       - .env
 

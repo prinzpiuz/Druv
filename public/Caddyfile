@@ -1,0 +1,7 @@
+jellyfin.yourdomain.com {
+    reverse_proxy http://100.x.x.x:8096  # Replace with your home Jellyfin's Tailscale IP
+    header_up Host {host}
+    header_up X-Real-IP {remote_host}
+    header_up X-Forwarded-For {remote_host}
+    header_up X-Forwarded-Proto {scheme}
+}
