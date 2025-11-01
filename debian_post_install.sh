@@ -6,12 +6,12 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 echo -e "${CYAN}
-  ____                    
- |  _ \ _ __ _   ___   __ 
- | | | | '__| | | \ \ / / 
- | |_| | |  | |_| |\ V /  
- |____/|_|   \__,_| \_/   
-                          
+  ____
+ |  _ \ _ __ _   ___   __
+ | | | | '__| | | \ \ / /
+ | |_| | |  | |_| |\ V /
+ |____/|_|   \__,_| \_/
+
 ${NC}"
 
 # Check if the script is being run as root
@@ -105,7 +105,7 @@ echo -e "${GREEN}Installing FFProbe${NC}"
 
 apt install unzip
 
-cd /configs/qbitrr/qBitManager 
+cd /configs/qbitrr/qBitManager
 
 wget https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffprobe-6.1-linux-64.zip
 

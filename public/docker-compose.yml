@@ -1,0 +1,32 @@
+services:
+  tailscale:
+    image: tailscale/tailscale:stable
+    container_name: tailscale
+    hostname: '*.prinzpiuz.in'
+    privileged: true
+    network_mode: host
+    env_file:
+      - .env
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_EXTRA_ARGS=--advertise-tags=tag:*.prinzpiuz.in
+    volumes:
+      - ./tailscale/state:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    restart: unless-stopped
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    env_file:
+      - .env
+    depends_on:
+      - tailscale
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy_data:/data
+      - ./caddy_config:/config
+    restart: unless-stopped

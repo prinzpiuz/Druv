@@ -1,0 +1,139 @@
+name: Infra Services
+services:
+  influxdb:
+    image: influxdb:2.2
+    container_name: influxdb
+    ports:
+      - 8086:8086
+    volumes:
+      - /influxdb:/var/lib/influxdb2
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+  scrutiny_web:
+    image: ghcr.io/analogj/scrutiny:master-web
+    container_name: scrutiny_web
+    ports:
+      - 8081:8081
+    volumes:
+      - /configs/scrutiny:/opt/scrutiny/config
+    environment:
+      SCRUTINY_WEB_INFLUXDB_HOST: influxdb
+      SCRUTINY_WEB_INFLUXDB_PORT: 8086
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/health"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 10s
+  scrutiny_collector:
+    image: ghcr.io/analogj/scrutiny:master-collector
+    container_name: scrutiny_collector
+    cap_add:
+      - SYS_RAWIO
+    volumes:
+      - /run/udev:/run/udev:ro
+    environment:
+      COLLECTOR_API_ENDPOINT: 'http://scrutiny_web:8081'
+      COLLECTOR_HOST_ID: 'HomeLab'
+      COLLECTOR_RUN_STARTUP: true
+    depends_on:
+      scrutiny_web:
+        condition: service_healthy
+    env_file:
+      - .env
+    devices:
+      - /dev/sda
+      - /dev/sdb
+  dockerproxy:
+    image: ghcr.io/tecnativa/docker-socket-proxy:latest
+    container_name: dockerproxy
+    pull_policy: always
+    environment:
+      - CONTAINERS=1
+      - SERVICES=1
+      - TASKS=1
+      - POST=0
+    ports:
+      - 127.0.0.1:2375:2375
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - homelab
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    pull_policy: always
+    environment:
+      PUID: 1000
+      PGID: 1000
+      HOMEPAGE_ALLOWED_HOSTS: '*'
+    ports:
+      - 3000:3000
+    volumes:
+      - /configs/homepage:/app/config
+    restart: always
+    env_file:
+      - .env
+    networks:
+      - homelab
+  myspeed:
+    image: germannewsmaker/myspeed
+    container_name: mySpeed
+    pull_policy: always
+    volumes:
+      - /configs/myspeed:/myspeed/data
+    restart: always
+    network_mode: service:gluetun
+    env_file:
+      - .env
+    depends_on:
+      gluetun:
+        condition: service_healthy
+  myspeed_no_vpn:
+    image: germannewsmaker/myspeed
+    container_name: mySpeedNoVPN
+    pull_policy: always
+    volumes:
+      - /configs/myspeed_no_vpn:/myspeed/data
+    restart: always
+    network_mode: bridge
+    ports:
+      - 5217:5216
+    env_file:
+      - .env
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    ports:
+      - 8082:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      TZ: Asia/Kolkata
+      NO_COLOR: true
+      WATCHTOWER_SCHEDULE: 0 0 19 * * *
+      WATCHTOWER_INCLUDE_STOPPED: true
+      WATCHTOWER_INCLUDE_RESTARTING: true
+      WATCHTOWER_HTTP_API_UPDATE: true
+      WATCHTOWER_HTTP_API_METRICS: true
+      WATCHTOWER_HTTP_API_TOKEN: ${WATCHTOWER_HTTP_API_TOKEN}
+      WATCHTOWER_HTTP_API_PERIODIC_POLLS: true
+    env_file:
+      - .env
+
+# networks:
+#   arr:
+#     external: true
