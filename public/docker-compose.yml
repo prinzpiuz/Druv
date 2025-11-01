@@ -15,7 +15,6 @@ services:
       - ./tailscale/state:/var/lib/tailscale
       - /dev/net/tun:/dev/net/tun
     restart: unless-stopped
-
   caddy:
     image: caddy:latest
     container_name: caddy

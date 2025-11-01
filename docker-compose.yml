@@ -4,8 +4,6 @@ include:
   - ./media/docker-compose.yml
   - ./backup/docker-compose.yml
   - ./tools/docker-compose.yml
-
-
 networks:
   homelab:
     external: true

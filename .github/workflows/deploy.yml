@@ -1,35 +1,30 @@
 name: Deploy Public Services to VPS
-
 on:
   push:
     branches:
       - main
     paths:
       - "public/**"
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
-
       - name: Copy files to VPS
         run: |
-          rsync -avz --delete ./public/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/public/
+          rsync -avz --delete ./public/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:~/Druv/
         env:
           RSYNC_RSH: "ssh -o StrictHostKeyChecking=no"
-
       - name: Deploy on VPS
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-          cd /opt/public
+          cd ~/Druv/
+          export TS_AUTHKEY="${{ secrets.TS_AUTHKEY }}"
           docker compose pull
           docker compose up -d --remove-orphans
           EOF

@@ -1,17 +1,17 @@
 ```
-                         ____                    
-                        |  _ \ _ __ _   ___   __ 
-                        | | | | '__| | | \ \ / / 
-                        | |_| | |  | |_| |\ V /  
-                        |____/|_|   \__,_| \_/  v3.0 
+                         ____
+                        |  _ \ _ __ _   ___   __
+                        | | | | '__| | | \ \ / /
+                        | |_| | |  | |_| |\ V /
+                        |____/|_|   \__,_| \_/  v3.0
                          Setup Scripts For A Media Server
-                          
+
 ```
 * **Create .env file**
- 
+
   `cp env.sample .env`
 
-* **Start Services**  
+* **Start Services**
 
   `docker-compose --env-file=.env up -d`
 

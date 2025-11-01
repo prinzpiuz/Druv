@@ -116,7 +116,6 @@ services:
       - .env
     networks:
       - homelab
-      
   radarr:
     image: ghcr.io/hotio/radarr:latest
     container_name: radarr
@@ -173,10 +172,10 @@ services:
     env_file:
       - .env
     environment:
-        - API_KEY=${SONARR_API_KEY}
-        - BASE_URL=http://${SONARR_IPV4_ADDR}:8989
-        - DELAY_IN_MINUTES=60
-        - IGNORE_TAG_NAME=ignore   
+      - API_KEY=${SONARR_API_KEY}
+      - BASE_URL=http://${SONARR_IPV4_ADDR}:8989
+      - DELAY_IN_MINUTES=60
+      - IGNORE_TAG_NAME=ignore
   readarr:
     image: ghcr.io/hotio/readarr
     container_name: readarr
@@ -199,7 +198,6 @@ services:
     networks:
       homelab:
         ipv4_address: ${READARR_IPV4_ADDR}
-        
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
@@ -295,7 +293,6 @@ services:
     networks:
       homelab:
         ipv4_address: ${BAZARR_IPV4_ADDR}
-
   unpackerr:
     image: golift/unpackerr
     container_name: unpackerr
@@ -317,7 +314,7 @@ services:
       - .env
     networks:
       - homelab
-  
+
 # networks:
 #   arr:
 #     external: true

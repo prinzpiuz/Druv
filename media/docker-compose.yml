@@ -16,7 +16,6 @@ services:
       - TZ=Asia/Kolkata
     env_file:
       - .env
-
   jellyfin:
     image: jellyfin/jellyfin
     container_name: jellyfin
@@ -55,7 +54,6 @@ services:
     depends_on:
       gluetun:
         condition: service_healthy
-  
 
 # networks:
 #   arr:
