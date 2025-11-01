@@ -15,9 +15,7 @@ services:
     restart: unless-stopped
   caddy:
     image: caddy:latest
-    container_name: caddy
-    env_file:
-      - .env
+    container_name: caddy_druv
     depends_on:
       - tailscale
     ports:
