@@ -21,6 +21,6 @@ if [ "$1" == "--all" ]; then
 fi
 
 
-docker compose --env-file=.env up -d --remove-orphans --build --force-recreate
+docker compose up -d --remove-orphans --build --force-recreate
 
 echo "Docker Compose services down and restarted."
