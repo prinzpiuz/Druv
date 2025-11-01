@@ -5,8 +5,6 @@ services:
     hostname: '*.prinzpiuz.in'
     privileged: true
     network_mode: host
-    env_file:
-      - .env
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
       - TS_STATE_DIR=/var/lib/tailscale
