@@ -1,4 +1,4 @@
-name: Deploy Public Services to VPS
+name: Deploy
 on:
   push:
     branches:
