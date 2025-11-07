@@ -17,7 +17,11 @@ jobs:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
       - name: Copy files to VPS
         run: |
-          rsync -avz --delete ./public/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:~/Druv/
+          rsync -avz --delete \
+          --filter='P /.env' \
+          --filter='P /caddy_data/' \
+          --filter='P /caddy_config/' \
+          ./public/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:~/Druv/
         env:
           RSYNC_RSH: "ssh -o StrictHostKeyChecking=no"
       - name: Deploy on VPS
