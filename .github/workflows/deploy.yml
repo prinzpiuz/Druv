@@ -12,10 +12,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.9.0
+        uses: webfactory/ssh-agent@v0.9.1
         with:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
-      - name: Copy files to VPS
+      - name: Copy files to Server
         run: |
           rsync -avz --delete \
           --filter='P /.env' \
@@ -24,7 +24,7 @@ jobs:
           ./public/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:~/Druv/
         env:
           RSYNC_RSH: "ssh -o StrictHostKeyChecking=no"
-      - name: Deploy on VPS
+      - name: Deploy on Server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           cd ~/Druv/
