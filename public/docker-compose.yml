@@ -1,7 +1,14 @@
 services:
   caddy:
     image: caddybuilds/caddy-cloudflare:alpine
-    container_name: caddy_druv
+    container_name: caddy_homelab
+    pull_policy: always
+    healthcheck:
+      test: ["curl", "-i", "https://${DOMAIN}:${PORT}/health"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
     network_mode: host
     environment:
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
