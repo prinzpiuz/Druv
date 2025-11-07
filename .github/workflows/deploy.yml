@@ -24,7 +24,6 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           cd ~/Druv/
-          export TS_AUTHKEY="${{ secrets.TS_AUTHKEY }}"
           docker compose pull
           docker compose up -d --remove-orphans
           EOF

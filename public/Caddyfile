@@ -1,7 +1,10 @@
-jellyfin.prinzpiuz.in {
-    reverse_proxy http://druv:8096
-    header_up Host {host}
-    header_up X-Real-IP {remote_host}
-    header_up X-Forwarded-For {remote_host}
-    header_up X-Forwarded-Proto {scheme}
+{
+    http_port 8082
 }
+
+jellyfin.prinzpiuz.in:8920 {
+    reverse_proxy druv.tail04bc7f.ts.net:8096
+    tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+    }
+ }

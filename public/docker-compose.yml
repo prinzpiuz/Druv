@@ -1,28 +1,17 @@
 services:
-  tailscale:
-    image: tailscale/tailscale:stable
-    container_name: tailscale
-    hostname: '*.prinzpiuz.in'
-    privileged: true
+  caddy:
+    image: caddybuilds/caddy-cloudflare:alpine
+    container_name: caddy_druv
     network_mode: host
     environment:
-      - TS_AUTHKEY=${TS_AUTHKEY}
-      - TS_STATE_DIR=/var/lib/tailscale
-      - TS_EXTRA_ARGS=--advertise-tags=tag:*.prinzpiuz.in
-    volumes:
-      - ./tailscale/state:/var/lib/tailscale
-      - /dev/net/tun:/dev/net/tun
-    restart: unless-stopped
-  caddy:
-    image: caddy:latest
-    container_name: caddy_druv
-    depends_on:
-      - tailscale
-    ports:
-      - "80:80"
-      - "443:443"
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+    env_file:
+      - .env
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - ./caddy_data:/data
       - ./caddy_config:/config
+    ports:
+      - 8920:8920
+      - 8082:8082
     restart: unless-stopped
