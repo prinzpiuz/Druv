@@ -68,15 +68,6 @@ usermod -aG docker $USER
 
 echo -e "${GREEN}Docker Installed.${NC}"
 
-# Install Portainer
-echo -e "${GREEN}Installing Portainer.${NC}"
-docker volume create portainer_data
-
-docker run -d -p 9000:9000 --name portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce:latest
-
-echo -e "${GREEN}Portainer Installed.${NC}"
-echo -e "${GREEN}-------------------------------------------------Done-------------------------------------------------${NC}"
-
 
 #Build media directory structure
 
@@ -95,8 +86,6 @@ echo -e "${GREEN}-------------------------------------------------Done----------
 
 echo -e "${GREEN}Media directory structure created!${NC}"
 
-#create docker network called group
-docker network create arr && echo -e "${GREEN}Docker network 'arr' created.${NC}"
 
 echo -e "${GREEN}Installing FFProbe${NC}"
 

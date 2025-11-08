@@ -4,3 +4,4 @@ mariadb/
 postgres/
 compose_restart.log
 .ssh
+infra/configs/homepage/logs

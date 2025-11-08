@@ -83,7 +83,7 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - /configs/homepage:/app/config
+      - ./configs/homepage:/app/config
     restart: always
     env_file:
       - .env

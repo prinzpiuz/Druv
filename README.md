@@ -7,18 +7,35 @@
                          Setup Scripts For A HomelAB
 
 ```
-* **Create .env file**
 
-  `cp env.sample .env`
+Avaialable Services
 
-* **Start Services**
+***arr**
+ - glutune - VPN service
+ - qbittorrent- Torrent client
+ - purgarr -
+ - qbitmanage
+ - radarr
+ - sonarr
+ - swurApp
+ - readarr
+ - flaresolverr
+ - prowlarr
+ - jackett
+ - recyclarr
+ - bazarr
+ - unpackerr
 
-  `docker-compose --env-file=.env up -d`
+
+
+
+
+
+
+### Debug
 
 * **Container IP Address**
-
-  `docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' <Container Name>`
-
+`docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' <Container Name>`
 
 ### Usefull Links
 
