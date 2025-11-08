@@ -1,0 +1,49 @@
+name: Github Release
+on:
+  push:
+    branches:
+      - main
+jobs:
+  release:
+    name: Github Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Get New Tag
+        id: autoversion
+        uses: ietf-tools/semver-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
+          skipInvalidTags: true
+          noVersionBumpBehavior: patch
+    outputs:
+      new_tag: ${{ steps.autoversion.outputs.nextStrict }}
+  update-version-file:
+    name: Update Version File
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Update VERSION file
+        run: |
+          NEW_VERSION="${{ needs.release.outputs.new_tag }}" && sed -i 's/^VERSION=.*$/VERSION="'"$NEW_VERSION"'"/' logo.sh
+      - name: Commit and Push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: Auto-update version in logo.sh to ${{ needs.release.outputs.new_tag }}"
+          file_pattern: "logo.sh"
+  github-release:
+    name: Create GitHub Release
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.release.outputs.new_tag }}
+          name: Druv ${{ needs.release.outputs.new_tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

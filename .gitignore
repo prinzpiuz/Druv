@@ -3,3 +3,4 @@ mybb/
 mariadb/
 postgres/
 compose_restart.log
+.ssh

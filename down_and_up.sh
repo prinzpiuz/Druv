@@ -1,5 +1,7 @@
 #!/bin/bash
 
+./logo.sh
+
 echo "$(date)"
 
 COMPOSE_DIR="/home/druv/druv_setup"

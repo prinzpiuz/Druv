@@ -6,13 +6,20 @@ services:
     network_mode: host
     environment:
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - DOMAIN=${DOMAIN}
+      - PORT=${PORT}
+      - REVERSE_PROXY_URL=${REVERSE_PROXY_URL}
+      - REVERSE_PROXY_PORT=${REVERSE_PROXY_PORT}
     env_file:
       - .env
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./Caddyfile.template:/etc/caddy/Caddyfile.template
       - ./caddy_data:/data
       - ./caddy_config:/config
+      - ./start_caddy.sh:/start_caddy.sh
     ports:
       - 8920:8920
       - 8082:8082
     restart: unless-stopped
+    entrypoint: ["/bin/sh", "/start_caddy.sh"]

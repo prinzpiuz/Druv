@@ -55,7 +55,3 @@ services:
       - .env
     volumes:
       - /home/druv/.ssh:/run/secrets/.ssh:ro
-
-# networks:
-#   arr:
-#     external: true

@@ -5,13 +5,10 @@ GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-echo -e "${CYAN}
-  ____
- |  _ \ _ __ _   ___   __
- | | | | '__| | | \ \ / /
- | |_| | |  | |_| |\ V /
- |____/|_|   \__,_| \_/
+./logo.sh
 
+echo -e "${CYAN}
+---------------------------------Starting Debian Post Install Script---------------------------------
 ${NC}"
 
 # Check if the script is being run as root
@@ -132,3 +129,8 @@ sudo apt-get install tailscale
 echo -e "${GREEN}Installing TailScale Succesfull.${NC}"
 
 sudo tailscale up
+
+
+echo -e "${CYAN}
+-------------------------------------------------Done-------------------------------------------------
+${NC}"
