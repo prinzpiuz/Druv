@@ -314,7 +314,3 @@ services:
       - .env
     networks:
       - homelab
-
-# networks:
-#   arr:
-#     external: true

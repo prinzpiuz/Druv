@@ -31,3 +31,26 @@ jobs:
           docker compose pull
           docker compose up -d --remove-orphans
           EOF
+      - name: Deployment Complete
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            Public Services Deployed Successfully!
+      - name: Deployment Failed
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            Alert! Deployment Failed for Druv Setup Scripts.
+            Please check the GitHub Actions logs for more details.
+      - name: Clean up old deployments
+        if: success()
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          docker system prune -f
+          EOF

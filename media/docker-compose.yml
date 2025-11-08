@@ -54,7 +54,3 @@ services:
     depends_on:
       gluetun:
         condition: service_healthy
-
-# networks:
-#   arr:
-#     external: true

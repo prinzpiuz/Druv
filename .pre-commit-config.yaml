@@ -12,8 +12,3 @@ repos:
     rev: v0.20.0
     hooks:
       - id: yamlfmt
-        # types: [yml]
-  - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.37.1
-    hooks:
-      - id: yamllint

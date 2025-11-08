@@ -3,8 +3,8 @@
                         |  _ \ _ __ _   ___   __
                         | | | | '__| | | \ \ / /
                         | |_| | |  | |_| |\ V /
-                        |____/|_|   \__,_| \_/  v3.0
-                         Setup Scripts For A Media Server
+                        |____/|_|   \__,_| \_/
+                         Setup Scripts For A HomelAB
 
 ```
 * **Create .env file**
