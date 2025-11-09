@@ -71,7 +71,7 @@ services:
     env_file:
       - .env
     networks:
-      - homelab
+      - ${NETWORK_NAME}
   homepage:
     image: ghcr.io/gethomepage/homepage:latest
     container_name: homepage
@@ -80,6 +80,7 @@ services:
       PUID: 1000
       PGID: 1000
       HOMEPAGE_ALLOWED_HOSTS: "*"
+      HOMEPAGE_VAR_TAILSCALE_API_KEY: ${HOMEPAGE_VAR_TAILSCALE_API_KEY}
     ports:
       - 3000:3000
     volumes:
@@ -88,7 +89,7 @@ services:
     env_file:
       - .env
     networks:
-      - homelab
+      - ${NETWORK_NAME}
   myspeed:
     image: germannewsmaker/myspeed
     container_name: mySpeed
@@ -114,3 +115,7 @@ services:
       - 5217:5216
     env_file:
       - .env
+networks:
+  default:
+    name: ${NETWORK_NAME}
+    external: true

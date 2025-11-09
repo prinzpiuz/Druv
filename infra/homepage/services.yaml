@@ -60,7 +60,7 @@
         widget:
           type: tailscale
           deviceid: nhJ5mxzyWt11CNTRL
-          key: tskey-api-kXeW2t5JBj11CNTRL-tfFQ7MzB616XUxVCSfXvz5L94dH4Z3W72
+          key: {? {HOMEPAGE_VAR_TAILSCALE_API_KEY: ''} : ''}
 - Services:
     - Jellyfin:
         icon: jellyfin.png

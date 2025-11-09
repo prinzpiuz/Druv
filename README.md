@@ -26,6 +26,29 @@ Avaialable Services
  - bazarr
  - unpackerr
 
+**backup**
+ - restic
+ - backrest
+
+**infra**
+ - infludb
+ - scrutiny
+ - dockerproxy
+ - homepage
+ - myspeed
+
+**media**
+ - audiobookshelf
+ - jellyfin
+ - jellyseer
+
+**public**
+
+
+
+**tools**
+ - qdarnt
+
 
 
 

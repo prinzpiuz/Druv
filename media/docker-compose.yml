@@ -35,7 +35,7 @@ services:
     env_file:
       - .env
     networks:
-      homelab:
+      default:
         ipv4_address: ${JELLYFIN_IPV4_ADDR}
   jellyseerr:
     image: fallenbagel/jellyseerr:latest
@@ -54,3 +54,7 @@ services:
     depends_on:
       gluetun:
         condition: service_healthy
+networks:
+  default:
+    name: ${NETWORK_NAME}
+    external: true

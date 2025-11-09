@@ -1,0 +1,21 @@
+# For configuration options and examples, please see:
+# https://gethomepage.dev/latest/configs/settings
+hideVersion: true
+title: Druv☁ v3.0
+background: https://wallpapercave.com/wp/wp10990841.jpg
+theme: dark
+color: slate
+# statusStyle: "dot"
+
+layout:
+  Info:
+    header: true
+    style: row
+    columns: 2
+  Services:
+    header: true
+    style: row
+    columns: 3
+    useEqualHeights: true
+headerStyle: clean
+showStats: true

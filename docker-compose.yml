@@ -17,4 +17,5 @@ include:
   - ./tools/docker-compose.yml
 networks:
   homelab:
+    name: ${NETWORK_NAME}
     external: true
