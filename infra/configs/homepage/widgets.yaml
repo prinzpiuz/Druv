@@ -3,6 +3,8 @@
 - greeting:
     text_size: xl
     text: Druv v3.0
+- logo:
+    icon: https://upload.wikimedia.org/wikipedia/commons/6/66/Openlogo-debianV2.svg
 - resources:
     cpu: true
     memory: true
@@ -14,6 +16,7 @@
     units: metric # only used by cpu temp
     refresh: 3000 # optional, in ms
     diskUnits: bytes # optional, bytes (default) or bbytes. Only applies to disk
+    network: true
 - datetime:
     text_size: xl
     format:

@@ -55,3 +55,22 @@ services:
       - .env
     volumes:
       - /home/druv/.ssh:/run/secrets/.ssh:ro
+  backrest:
+    image: garethgeorge/backrest:latest
+    container_name: backrest
+    hostname: backrest
+    network_mode: host
+    volumes:
+      - /configs/backrest/data:/data
+      - /configs/backrest/config:/config
+      - /configs/backrest/cache:/cache
+      - ${BACKREST_REPO}:/repos
+    environment:
+      - BACKREST_DATA=/data
+      - BACKREST_CONFIG=/config/config.json
+      - XDG_CACHE_HOME=/cache
+      - TMPDIR=/tmp
+      - TZ=Asia/Kolkata
+    ports:
+      - 9898:9898
+    restart: unless-stopped

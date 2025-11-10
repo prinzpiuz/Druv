@@ -1,5 +1,29 @@
 # For configuration options and examples, please see:
-# https://gethomepage.dev/configs/settings/
-providers:
-  openweathermap: openweathermapapikey
-  weatherapi: weatherapiapikey
+# https://gethomepage.dev/latest/configs/settings
+hideVersion: true
+title: Druv☁
+theme: dark
+color: slate
+# statusStyle: "dot"
+
+layout:
+  Info:
+    header: true
+    style: row
+    columns: 4
+  Services:
+    header: true
+    style: row
+    columns: 5
+    useEqualHeights: true
+headerStyle: boxedWidgets
+showStats: true
+disableUpdateCheck: true
+hideErrors: true
+useEqualHeights: true
+background:
+  image: https://w0.peakpx.com/wallpaper/966/880/HD-wallpaper-black-dark-solid-color.jpg
+  blur: sm # sm, md, xl... see https://tailwindcss.com/docs/backdrop-blur
+  saturate: 100 # 0, 50, 100... see https://tailwindcss.com/docs/backdrop-saturate
+  brightness: 50 # 0, 50, 75... see https://tailwindcss.com/docs/backdrop-brightness
+  opacity: 100 # 0-100

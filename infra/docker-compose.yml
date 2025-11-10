@@ -81,6 +81,18 @@ services:
       PGID: 1000
       HOMEPAGE_ALLOWED_HOSTS: "*"
       HOMEPAGE_VAR_TAILSCALE_API_KEY: ${HOMEPAGE_VAR_TAILSCALE_API_KEY}
+      HOMEPAGE_VAR_PORTAINER_API_KEY: ${HOMEPAGE_VAR_PORTAINER_API_KEY}
+      HOMEPAGE_VAR_RADARR_API_KEY: ${HOMEPAGE_VAR_RADARR_API_KEY}
+      HOMEPAGE_VAR_SONARR_API_KEY: ${HOMEPAGE_VAR_SONARR_API_KEY}
+      HOMEPAGE_VAR_READARR_API_KEY: ${HOMEPAGE_VAR_READARR_API_KEY}
+      HOMEPAGE_VAR_AUDIOBOOKSHELF_API_KEY: ${HOMEPAGE_VAR_AUDIOBOOKSHELF_API_KEY}
+      HOMEPAGE_VAR_PROWLARR_API_KEY: ${HOMEPAGE_VAR_PROWLARR_API_KEY}
+      HOMEPAGE_VAR_JACKETT_API_KEY: ${HOMEPAGE_VAR_JACKETT_API_KEY}
+      HOMEPAGE_VAR_QBITTORRENT_USERNAME: ${HOMEPAGE_VAR_QBITTORRENT_USERNAME}
+      HOMEPAGE_VAR_QBITTORRENT_PASSWORD: ${HOMEPAGE_VAR_QBITTORRENT_PASSWORD}
+      HOMEPAGE_VAR_BAZARR_API_KEY: ${HOMEPAGE_VAR_BAZARR_API_KEY}
+      HOMEPAGE_VAR_RESTIC_PASSWORD: ${HOMEPAGE_VAR_RESTIC_PASSWORD}
+      HOMEPAGE_VAR_RESTIC_USERNAME: ${HOMEPAGE_VAR_RESTIC_USERNAME}
     ports:
       - 3000:3000
     volumes:
@@ -115,6 +127,30 @@ services:
       - 5217:5216
     env_file:
       - .env
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    container_name: uptime-kuma
+    pull_policy: always
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - /configs/uptime-kuma/data:/app/data
+    ports:
+      - 3001:3001
+  autokuma:
+    image: ghcr.io/bigboot/autokuma:latest
+    container_name: autokuma
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      AUTOKUMA__KUMA__URL: http://${SERVER_URL}:3001
+      AUTOKUMA__KUMA__USERNAME: ${UPTIME_KUMA_USERNAME}
+      AUTOKUMA__KUMA__PASSWORD: ${UPTIME_KUMA_PASSWORD}
+      AUTOKUMA__DOCKER__HOSTS: unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /configs/autokuma-data:/data
 networks:
   default:
     name: ${NETWORK_NAME}

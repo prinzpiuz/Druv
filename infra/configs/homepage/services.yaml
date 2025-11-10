@@ -1,0 +1,194 @@
+- Info:
+    - Calender:
+        widget:
+          type: calendar
+          firstDayInWeek: sunday
+          view: agenda
+          maxEvents: 10
+          showTime: true
+          timezone: Asia/Kolkata
+          integrations:
+            - type: sonarr
+              service_group: Services
+              service_name: Sonarr
+              color: teal
+              params:
+                unmonitored: true
+            - type: radarr
+              service_group: Services
+              service_name: Radarr
+              color: teal
+              params:
+                unmonitored: true
+    - Gluetun:
+        icon: gluetun.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8000
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8000
+        server: druv-docker
+        container: gluetun
+        widget:
+          type: gluetun
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8000
+    - Portainer:
+        icon: portainer.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9000
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9000
+        server: druv-docker
+        container: portainer
+        widget:
+          type: portainer
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9000
+          env: 3
+          key: "{{HOMEPAGE_VAR_PORTAINER_API_KEY}}"
+    - S.M.A.R.T:
+        icon: scrutiny.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8081
+        widget:
+          type: scrutiny
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8081
+    - Airtel Speed:
+        icon: myspeed.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5217
+        widget:
+          type: myspeed
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5217
+    - VPN Speed:
+        icon: myspeed.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5216
+        widget:
+          type: myspeed
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5216
+    - Tailscale:
+        icon: tailscale.png
+        widget:
+          type: tailscale
+          deviceid: nhJ5mxzyWt11CNTRL
+          key: "{{HOMEPAGE_VAR_TAILSCALE_API_KEY}}"
+    - Backup Status:
+        icon: backrest.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9898
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9898
+        server: druv-docker
+        container: backrest
+        widget:
+          type: backrest
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9898
+          username: "{{HOMEPAGE_VAR_RESTIC_USERNAME}}"
+          password: "{{HOMEPAGE_VAR_RESTIC_PASSWORD}}"
+    - Uptime:
+        icon: https://uptime.kuma.pet/img/icon.svg
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:3001
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:3001
+        server: druv-docker
+        container: uptime
+        widget:
+          type: uptimekuma
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:3001
+          slug: prinzpiuz
+- Services:
+    - Jellyfin:
+        icon: jellyfin.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8096
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8096
+        server: druv-docker
+        container: jellyfin
+        widget:
+          type: jellyfin
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8096
+          key: "{{HOMEPAGE_VAR_JELLYFIN_API_KEY}}"
+          enableBlocks: true
+          enableNowPlaying: true
+          enableUser: true
+          showEpisodeNumber: true
+          expandOneStreamToTwoRows: true
+    - Jellyseerr:
+        icon: jellyseerr.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5055
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5055
+        server: druv-docker
+        container: jellyseerr
+        widget:
+          type: jellyseerr
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5055
+          key: "{{HOMEPAGE_VAR_JELLYSEER_API_KEY}}"
+    - Radarr:
+        icon: radarr.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:7878
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:7878
+        server: druv-docker
+        container: radarr
+        widget:
+          type: radarr
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:7878
+          key: "{{HOMEPAGE_VAR_RADARR_API_KEY}}"
+    - Sonarr:
+        icon: sonarr.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8989
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8989
+        server: druv-docker
+        container: sonarr
+        widget:
+          type: sonarr
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8989
+          key: "{{HOMEPAGE_VAR_SONARR_API_KEY}}"
+    - Readarr:
+        icon: readarr.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8787
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8787
+        server: druv-docker
+        container: readarr
+        widget:
+          type: readarr
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8787
+          key: "{{HOMEPAGE_VAR_READARR_API_KEY}}"
+    - audiobookshelf:
+        icon: audiobookshelf.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8585
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8585
+        server: druv-docker
+        container: audiobookshelf
+        widget:
+          type: audiobookshelf
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8585
+          key: "{{HOMEPAGE_VAR_AUDIOBOOKSHELF_API_KEY}}"
+    - Prowlarr:
+        icon: prowlarr.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9696
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9696
+        server: druv-docker
+        container: prowlarr
+        widget:
+          type: prowlarr
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9696
+          key: "{{HOMEPAGE_VAR_PROWLARR_API_KEY}}"
+    - Jackett:
+        icon: jackett.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9117
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9117
+        server: druv-docker
+        container: jackett
+        widget:
+          type: jackett
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9117
+          password: "{{HOMEPAGE_VAR_JACKETT_API_KEY}}"
+    - Qbittorrent:
+        icon: qbittorrent.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8080
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8080
+        server: druv-docker
+        container: qbittorrent
+        widget:
+          type: qbittorrent
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8080
+          username: "{{HOMEPAGE_VAR_QBITTORRENT_USERNAME}}"
+          password: "{{HOMEPAGE_VAR_QBITTORRENT_PASSWORD}}"
+    - Bazarr:
+        icon: bazarr.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:6767
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:6767
+        server: druv-docker
+        container: bazarr
+        widget:
+          type: bazarr
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:6767
+          key: "{{HOMEPAGE_VAR_BAZARR_API_KEY}}"
