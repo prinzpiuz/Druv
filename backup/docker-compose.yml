@@ -11,7 +11,7 @@ services:
       - RESTIC_PASSWORD=${RESTIC_PASSWORD}
       - RESTIC_BACKUP_SOURCES=/mnt/volumes
       - RESTIC_COMPRESSION=auto
-      - RESTIC_BACKUP_ARGS=--tag media_server --exclude log.* --exclude *.log --exclude *.db --exclude logs --exclude *.db-shm --exclude *.db-wal --verbose
+      - RESTIC_BACKUP_ARGS=--tag media_server --exclude log.* --exclude *.log --exclude logs --exclude *.db-shm --exclude *.db-wal --verbose
       - RESTIC_FORGET_ARGS=--keep-last 10 --keep-daily 7 --keep-weekly 5 --keep-monthly 12
       - TZ=Asia/Kolkata
     volumes:

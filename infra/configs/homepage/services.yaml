@@ -80,7 +80,7 @@
         href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:3001
         ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:3001
         server: druv-docker
-        container: uptime
+        container: uptime-kuma
         widget:
           type: uptimekuma
           url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:3001

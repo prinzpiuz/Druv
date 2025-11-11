@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source .env
-
 RED='\033[0;31m'
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
@@ -29,7 +27,11 @@ setup_environment() {
         exit 1
     fi
     success_log "Switched to directory: $COMPOSE_DIR"
-
+    if ! source .env; then
+        error_log "Error: Could not source .env file" >&2
+        exit 1
+    fi
+    success_log "Environment variables loaded from .env file."
     if [ -x "./logo.sh" ]; then
         ./logo.sh
     else

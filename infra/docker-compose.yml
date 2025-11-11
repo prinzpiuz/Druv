@@ -136,21 +136,9 @@ services:
       - .env
     volumes:
       - /configs/uptime-kuma/data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - 3001:3001
-  autokuma:
-    image: ghcr.io/bigboot/autokuma:latest
-    container_name: autokuma
-    pull_policy: always
-    restart: unless-stopped
-    environment:
-      AUTOKUMA__KUMA__URL: http://${SERVER_URL}:3001
-      AUTOKUMA__KUMA__USERNAME: ${UPTIME_KUMA_USERNAME}
-      AUTOKUMA__KUMA__PASSWORD: ${UPTIME_KUMA_PASSWORD}
-      AUTOKUMA__DOCKER__HOSTS: unix:///var/run/docker.sock
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /configs/autokuma-data:/data
 networks:
   default:
     name: ${NETWORK_NAME}
