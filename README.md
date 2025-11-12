@@ -16,6 +16,7 @@
 * Update the .env files and other configs for each service based on your requirements.
 
 * Run the main script to bring all your services down and up smoothly:
+
     `./down_and_up.sh`
 
 ### Using the Same Server Setup
