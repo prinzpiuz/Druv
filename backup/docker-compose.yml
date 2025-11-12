@@ -64,6 +64,7 @@ services:
       - /configs/backrest/data:/data
       - /configs/backrest/config:/config
       - /configs/backrest/cache:/cache
+      - /configs:/homelab_volumes:ro
       - ${BACKREST_REPO}:/repos
     environment:
       - BACKREST_DATA=/data
