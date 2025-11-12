@@ -4,7 +4,7 @@ RED='\033[0;31m'
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
 NC='\033[0m'
-COMPOSE_DIR=${COMPOSE_DIR}
+COMPOSE_DIR=/home/druv/druv_setup
 NETWORK_NAME=${NETWORK_NAME}
 NETWORK_SUBNET=${NETWORK_SUBNET}
 
@@ -22,15 +22,15 @@ success_log() {
 
 setup_environment() {
 
+    if ! source "$COMPOSE_DIR/.env"; then
+        error_log "Error: Could not source .env file" >&2
+        exit 1
+    fi
     if ! cd "$COMPOSE_DIR"; then
         error_log "Error: Could not change to directory $COMPOSE_DIR" >&2
         exit 1
     fi
     success_log "Switched to directory: $COMPOSE_DIR"
-    if ! source .env; then
-        error_log "Error: Could not source .env file" >&2
-        exit 1
-    fi
     success_log "Environment variables loaded from .env file."
     if [ -x "./logo.sh" ]; then
         ./logo.sh
@@ -38,7 +38,6 @@ setup_environment() {
         warning_log "Warning: logo.sh not found or not executable."
     fi
 
-    success_log "$(date): Starting service management routine."
 }
 
 docker_down() {
@@ -107,6 +106,7 @@ check_config() {
 
 
 main() {
+    success_log "$(date): Starting service management routine."
     setup_environment
     check_config
     docker_down
