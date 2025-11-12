@@ -4,3 +4,5 @@ mariadb/
 postgres/
 compose_restart.log
 .ssh
+infra/homepage/logs/homepage.log
+*.log

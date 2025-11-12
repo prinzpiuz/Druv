@@ -71,7 +71,7 @@ services:
     env_file:
       - .env
     networks:
-      - homelab
+      - ${NETWORK_NAME}
   homepage:
     image: ghcr.io/gethomepage/homepage:latest
     container_name: homepage
@@ -80,15 +80,28 @@ services:
       PUID: 1000
       PGID: 1000
       HOMEPAGE_ALLOWED_HOSTS: "*"
+      HOMEPAGE_VAR_TAILSCALE_API_KEY: ${HOMEPAGE_VAR_TAILSCALE_API_KEY}
+      HOMEPAGE_VAR_PORTAINER_API_KEY: ${HOMEPAGE_VAR_PORTAINER_API_KEY}
+      HOMEPAGE_VAR_RADARR_API_KEY: ${HOMEPAGE_VAR_RADARR_API_KEY}
+      HOMEPAGE_VAR_SONARR_API_KEY: ${HOMEPAGE_VAR_SONARR_API_KEY}
+      HOMEPAGE_VAR_READARR_API_KEY: ${HOMEPAGE_VAR_READARR_API_KEY}
+      HOMEPAGE_VAR_AUDIOBOOKSHELF_API_KEY: ${HOMEPAGE_VAR_AUDIOBOOKSHELF_API_KEY}
+      HOMEPAGE_VAR_PROWLARR_API_KEY: ${HOMEPAGE_VAR_PROWLARR_API_KEY}
+      HOMEPAGE_VAR_JACKETT_API_KEY: ${HOMEPAGE_VAR_JACKETT_API_KEY}
+      HOMEPAGE_VAR_QBITTORRENT_USERNAME: ${HOMEPAGE_VAR_QBITTORRENT_USERNAME}
+      HOMEPAGE_VAR_QBITTORRENT_PASSWORD: ${HOMEPAGE_VAR_QBITTORRENT_PASSWORD}
+      HOMEPAGE_VAR_BAZARR_API_KEY: ${HOMEPAGE_VAR_BAZARR_API_KEY}
+      HOMEPAGE_VAR_RESTIC_PASSWORD: ${HOMEPAGE_VAR_RESTIC_PASSWORD}
+      HOMEPAGE_VAR_RESTIC_USERNAME: ${HOMEPAGE_VAR_RESTIC_USERNAME}
     ports:
       - 3000:3000
     volumes:
-      - /configs/homepage:/app/config
+      - ./configs/homepage:/app/config
     restart: always
     env_file:
       - .env
     networks:
-      - homelab
+      - ${NETWORK_NAME}
   myspeed:
     image: germannewsmaker/myspeed
     container_name: mySpeed
@@ -114,3 +127,19 @@ services:
       - 5217:5216
     env_file:
       - .env
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    container_name: uptime-kuma
+    pull_policy: always
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - /configs/uptime-kuma/data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 3001:3001
+networks:
+  default:
+    name: ${NETWORK_NAME}
+    external: true
