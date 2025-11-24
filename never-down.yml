@@ -26,6 +26,12 @@ services:
     container_name: beszel
     restart: unless-stopped
     pull_policy: always
+    env_file:
+      - .env
+    environment:
+      - USER_EMAIL=${BESZEL_USERNAME}
+      - USER_PASSWORD=${BESZEL_PASSWORD}
+      - AUTO_LOGIN=${BESZEL_USERNAME}
     ports:
       - 8090:8090
     volumes:

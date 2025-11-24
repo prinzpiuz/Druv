@@ -23,3 +23,26 @@ services:
       - 8082:8082
     restart: unless-stopped
     entrypoint: ["/bin/sh", "/start_caddy.sh"]
+  beszel-agent:
+    image: henrygd/beszel-agent
+    container_name: beszel-agent-apps.prinzpiuz.in
+    restart: unless-stopped
+    pull_policy: always
+    network_mode: host
+    volumes:
+      - ./configs/beszel_agent_data:/var/lib/beszel-agent
+      - ./configs/beszel_socket:/beszel_socket
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    env_file:
+      - .env
+    cap_add:
+      - SYS_RAWIO
+      - SYS_ADMIN
+      - CAP_PERFMON
+    devices:
+      - /dev/sda:/dev/sda
+    environment:
+      - LISTEN=/beszel_socket/beszel.sock
+      - HUB_URL=http://{REVERSE_PROXY_URL}:8090
+      - TOKEN=${BESZEL_TOKEN}
+      - KEY=${BESZEL_KEY}

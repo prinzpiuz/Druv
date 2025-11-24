@@ -131,7 +131,7 @@ services:
     env_file:
       - .env
   beszel-agent:
-    image: henrygd/beszel-agent:latest
+    image: henrygd/beszel-agent:alpine
     container_name: beszel-homelab-agent
     restart: unless-stopped
     pull_policy: always
@@ -140,11 +140,24 @@ services:
       - /configs/beszel_agent_data:/var/lib/beszel-agent
       - /configs/beszel_socket:/beszel_socket
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    env_file:
+      - .env
+    cap_add:
+      - SYS_RAWIO
+      - SYS_ADMIN
+      - CAP_PERFMON
+    devices:
+      - /dev/sda:/dev/sda
+      - /dev/sdb:/dev/sdb
+      - /dev/dri/card0:/dev/dri/card0
     environment:
       - LISTEN=/beszel_socket/beszel.sock
       - HUB_URL=http://localhost:8090
       - TOKEN=${BESZEL_TOKEN}
       - KEY=${BESZEL_KEY}
+      - INTEL_GPU_DEVICES=/dev/dri/card0
+      - SMART_DEVICES=/dev/sdb:sat,/dev/sda:sat
+      - EXTRA_FILESYSTEMS=sdb
 networks:
   default:
     name: ${NETWORK_NAME}
