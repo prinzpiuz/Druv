@@ -21,6 +21,8 @@ jobs:
           --filter='P /.env' \
           --filter='P /caddy_data/' \
           --filter='P /caddy_config/' \
+          --filter='P /configs/' \
+          --filter='P /configs/' \
           ./public/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:~/Druv/
         env:
           RSYNC_RSH: "ssh -o StrictHostKeyChecking=no"
