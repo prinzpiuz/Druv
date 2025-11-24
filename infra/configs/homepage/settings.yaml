@@ -10,11 +10,21 @@ layout:
   Info:
     header: true
     style: row
-    columns: 4
-  Services:
+    columns: 1
+  Infra:
     header: true
     style: row
-    columns: 5
+    columns: 3
+    useEqualHeights: true
+  Media:
+    header: true
+    style: row
+    columns: 3
+    useEqualHeights: true
+  ARR:
+    header: true
+    style: row
+    columns: 3
     useEqualHeights: true
 headerStyle: boxedWidgets
 showStats: true

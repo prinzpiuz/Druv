@@ -6,3 +6,5 @@ compose_restart.log
 .ssh
 infra/homepage/logs/homepage.log
 *.log
+beszel_data
+beszel_socket

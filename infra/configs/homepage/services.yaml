@@ -20,6 +20,7 @@
               color: teal
               params:
                 unmonitored: true
+- Infra:
     - Gluetun:
         icon: gluetun.png
         href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8000
@@ -85,7 +86,19 @@
           type: uptimekuma
           url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:3001
           slug: prinzpiuz
-- Services:
+    - Beszel:
+        icon: beszel.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8090
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8090
+        server: druv-docker
+        container: beszel
+        widget:
+          type: beszel
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8090
+          username: "{{HOMEPAGE_VAR_BESZEL_USERNAME}}"
+          password: "{{HOMEPAGE_VAR_BESZEL_PASSWORD}}"
+          version: 2
+- Media:
     - Jellyfin:
         icon: jellyfin.png
         href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8096
@@ -101,6 +114,23 @@
           enableUser: true
           showEpisodeNumber: true
           expandOneStreamToTwoRows: true
+    - Audiobookshelf:
+        icon: audiobookshelf.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8585
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8585
+        server: druv-docker
+        container: audiobookshelf
+        widget:
+          type: audiobookshelf
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8585
+          key: "{{HOMEPAGE_VAR_AUDIOBOOKSHELF_API_KEY}}"
+    - Music:
+        icon: jellyfin.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8100
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8100
+        server: druv-docker
+        container: jellyfin-music
+- ARR:
     - Jellyseerr:
         icon: jellyseerr.png
         href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5055
@@ -141,16 +171,16 @@
           type: readarr
           url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8787
           key: "{{HOMEPAGE_VAR_READARR_API_KEY}}"
-    - audiobookshelf:
-        icon: audiobookshelf.png
-        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8585
-        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8585
+    - Lidarr:
+        icon: lidarr.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8686
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8686
         server: druv-docker
-        container: audiobookshelf
+        container: lidarr
         widget:
-          type: audiobookshelf
-          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8585
-          key: "{{HOMEPAGE_VAR_AUDIOBOOKSHELF_API_KEY}}"
+          type: lidarr
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8686
+          key: "{{HOMEPAGE_VAR_LIDARR_API_KEY}}"
     - Prowlarr:
         icon: prowlarr.png
         href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9696

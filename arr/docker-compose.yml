@@ -12,7 +12,7 @@ services:
     volumes:
       - /configs/gluetun:/gluetun
     environment:
-      - TZ=Asia/Kolkata
+      - TZ=${TZ}
       - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
       - VPN_TYPE=${VPN_TYPE}
       - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
@@ -37,6 +37,7 @@ services:
     networks:
       default:
         ipv4_address: ${GLUETUN_IPV4_ADDR}
+  #TODO implement search plugins
   qbittorrent:
     image: ghcr.io/hotio/qbittorrent
     container_name: qbittorrent
@@ -46,7 +47,7 @@ services:
       - PUID=1000
       - PGID=1000
       - UMASK=002
-      - TZ=Asia/Kolkata
+      - TZ=${TZ}
       - WEBUI_PORTS=8080/tcp,8080/udp
       - PRIVOXY_ENABLED=false
       - UNBOUND_ENABLED=false
@@ -128,7 +129,7 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Asia/Kolkata
+      - TZ=${TZ}
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /configs/radarr:/config
@@ -152,7 +153,7 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Asia/Kolkata
+      - TZ=${TZ}
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /configs/sonarr:/config
@@ -164,6 +165,27 @@ services:
     networks:
       default:
         ipv4_address: ${SONARR_IPV4_ADDR}
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:latest
+    container_name: lidarr
+    restart: unless-stopped
+    pull_policy: always
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+    volumes:
+      - /configs/lidarr/config:/config
+      - /data:/data
+    ports:
+      - 8686:8686
+    depends_on:
+      - gluetun
+    env_file:
+      - .env
+    networks:
+      default:
+        ipv4_address: ${LIDARR_IPV4_ADDR}
   swurApp:
     image: owlcaribou/swurapp
     container_name: sonarrWatchUntilRelease
@@ -187,7 +209,7 @@ services:
       - PUID=1000
       - PGID=1000
       - UMASK=002
-      - TZ=Asia/Kolkata
+      - TZ=${TZ}
     volumes:
       - /configs/readarr:/config
       - /data:/data
@@ -205,7 +227,7 @@ services:
     environment:
       - LOG_LEVEL=info
       - LOG_HTML=false
-      - TZ=Asia/Kolkata
+      - TZ=${TZ}
     ports:
       - 8191:8191
     restart: unless-stopped
@@ -223,7 +245,7 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Asia/Kolkata
+      - TZ=${TZ}
     volumes:
       - /configs/prowlarr:/config
     restart: always
@@ -241,7 +263,7 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Asia/Kolkata
+      - TZ=${TZ}
       - AUTO_UPDATE=true
     network_mode: service:gluetun
     volumes:
@@ -262,8 +284,8 @@ services:
       - /configs/recyclarr:/config
     restart: always
     environment:
-      CRON_SCHEDULE: "* * * * *"
-      TZ: Asia/Kolkata
+      - CRON_SCHEDULE="* * * * *"
+      - TZ=${TZ}
     env_file:
       - .env
     networks:
@@ -280,7 +302,7 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Asia/Kolkata
+      - TZ=${TZ}
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /configs/bazarr:/config
@@ -302,7 +324,7 @@ services:
     restart: always
     user: 1000:1000
     environment:
-      - TZ=Asia/Kolkata
+      - TZ=${TZ}
       - UN_LOG_FILE=/downloads/unpackerr.log
       - UN_SONARR_0_URL=http://${SONARR_IPV4_ADDR}:8989
       - UN_SONARR_0_API_KEY=${SONARR_API_KEY}

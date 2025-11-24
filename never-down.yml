@@ -1,0 +1,43 @@
+services:
+  portainer-ce:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: always
+    pull_policy: always
+    ports:
+      - 9000:9000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /data/portainer_data:/data
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    container_name: uptime-kuma
+    restart: unless-stopped
+    pull_policy: always
+    env_file:
+      - .env
+    volumes:
+      - /configs/uptime-kuma/data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 3001:3001
+  beszel:
+    image: henrygd/beszel:latest
+    container_name: beszel
+    restart: unless-stopped
+    pull_policy: always
+    env_file:
+      - .env
+    environment:
+      - USER_EMAIL=${BESZEL_USERNAME}
+      - USER_PASSWORD=${BESZEL_PASSWORD}
+      - AUTO_LOGIN=${BESZEL_USERNAME}
+    ports:
+      - 8090:8090
+    volumes:
+      - /configs/beszel_server_data/beszel_data:/beszel_data
+      - /configs/beszel_server_data/beszel_socket:/beszel_socket
+networks:
+  homelab:
+    name: ${NETWORK_NAME}
+    external: true

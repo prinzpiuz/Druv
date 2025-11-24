@@ -37,6 +37,19 @@ services:
     networks:
       default:
         ipv4_address: ${JELLYFIN_IPV4_ADDR}
+  jelly-music-app:
+    image: ghcr.io/stannnnn/jelly-music-app:latest
+    container_name: jellyfin-music
+    pull_policy: always
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - JELLYAPP_PORT=8100
+      - DEFAULT_JELLYFIN_URL=http://${JELLYFIN_HOST_IPV4_ADDR}:8096
+      - LOCK_JELLYFIN_URL=true
+    ports:
+      - 8100:80
   jellyseerr:
     image: fallenbagel/jellyseerr:latest
     container_name: jellyseerr
