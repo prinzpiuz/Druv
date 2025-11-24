@@ -103,16 +103,37 @@ check_config() {
     fi
 }
 
+no_down_restart() {
+    success_log "Stoping & Re-Starting Never Down, Always Up Routine..."
+    success_log "$(date): Stoping service management routine."
+    if ! docker compose --file never-down.yml --env-file ./.env down; then
+        error_log "Failed Stopping Never Down Services" >&2
+        exit 1
+    fi
+    success_log "Stopped All Never Down Services Successfully."
+    success_log "$(date): Starting service management routine."
+    if ! docker compose --file never-down.yml --env-file ./.env up  -d --remove-orphans --build --force-recreate; then
+        error_log "Failed Starting Never Down Services" >&2
+        exit 1
+    fi
+    success_log "Started All Never Down Services Successfully."
+}
+
 
 
 main() {
     success_log "$(date): Starting service management routine."
     setup_environment
+    if [ "$1" == "--never-down-restart" ]; then
+        no_down_restart
+        exit 0
+    fi
     check_config
     docker_down
     sleep 5
     if [ "$1" == "--all" ]; then
         prune_and_network_setup
+        no_down_restart
     fi
     docker_up
 }
