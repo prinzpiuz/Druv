@@ -43,6 +43,6 @@ services:
       - /dev/sda:/dev/sda
     environment:
       - LISTEN=/beszel_socket/beszel.sock
-      - HUB_URL=http://{REVERSE_PROXY_URL}:8090
+      - HUB_URL=http://{HOMELAB_TAILNET_IP}:8090
       - TOKEN=${BESZEL_TOKEN}
       - KEY=${BESZEL_KEY}
