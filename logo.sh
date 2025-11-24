@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION="3.2.1"
+VERSION="3.2.2"
 SUBTEXT="Setup Scripts For A HomelAB"
 
 cat << EOF
