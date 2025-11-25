@@ -30,23 +30,6 @@
         widget:
           type: gluetun
           url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8000
-    - Portainer:
-        icon: portainer.png
-        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9000
-        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9000
-        server: druv-docker
-        container: portainer
-        widget:
-          type: portainer
-          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9000
-          env: 3
-          key: "{{HOMEPAGE_VAR_PORTAINER_API_KEY}}"
-    - S.M.A.R.T:
-        icon: scrutiny.png
-        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8081
-        widget:
-          type: scrutiny
-          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8081
     - Airtel Speed:
         icon: myspeed.png
         href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5217
