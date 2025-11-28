@@ -1,59 +1,5 @@
 name: Infra Services
 services:
-  influxdb:
-    image: influxdb:2.2
-    container_name: influxdb
-    ports:
-      - 8086:8086
-    volumes:
-      - /influxdb:/var/lib/influxdb2
-    env_file:
-      - .env
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
-      interval: 5s
-      timeout: 10s
-      retries: 20
-  scrutiny_web:
-    image: ghcr.io/analogj/scrutiny:master-web
-    container_name: scrutiny_web
-    ports:
-      - 8081:8081
-    volumes:
-      - /configs/scrutiny:/opt/scrutiny/config
-    environment:
-      SCRUTINY_WEB_INFLUXDB_HOST: influxdb
-      SCRUTINY_WEB_INFLUXDB_PORT: 8086
-    depends_on:
-      influxdb:
-        condition: service_healthy
-    env_file:
-      - .env
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/api/health"]
-      interval: 5s
-      timeout: 10s
-      retries: 20
-      start_period: 10s
-  scrutiny_collector:
-    image: ghcr.io/analogj/scrutiny:master-collector
-    container_name: scrutiny_collector
-    cap_add:
-      - SYS_RAWIO
-    volumes:
-      - /run/udev:/run/udev:ro
-    environment:
-      COLLECTOR_API_ENDPOINT: "http://scrutiny_web:8081"
-      COLLECTOR_HOST_ID: "HomeLab"
-      COLLECTOR_RUN_STARTUP: true
-    depends_on:
-      scrutiny_web:
-        condition: service_healthy
-    env_file:
-      - .env
-    devices:
-      - /dev/sda
-      - /dev/sdb
   dockerproxy:
     image: ghcr.io/tecnativa/docker-socket-proxy:latest
     container_name: dockerproxy

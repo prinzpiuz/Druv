@@ -119,11 +119,21 @@ no_down_restart() {
     success_log "Started All Never Down Services Successfully."
 }
 
-
+help() {
+    echo "Usage: $0 [--all | --never-down-restart]"
+    echo ""
+    echo "Options:"
+    echo "  --all                    Perform a full system prune and network setup before restarting services."
+    echo "  --never-down-restart     Restart only the services defined in never-down.yml without taking down other services."
+    exit 1
+}
 
 main() {
-    success_log "$(date): Starting service management routine."
     setup_environment
+    if [ "$1" == "--help" ]; then
+        help
+    fi
+    success_log "$(date): Starting service management routine."
     if [ "$1" == "--never-down-restart" ]; then
         no_down_restart
         exit 0
