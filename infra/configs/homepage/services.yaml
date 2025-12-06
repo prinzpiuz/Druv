@@ -9,15 +9,17 @@
           timezone: Asia/Kolkata
           integrations:
             - type: sonarr
-              service_group: Services
+              service_group: ARR
               service_name: Sonarr
               color: teal
+              baseUrl: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8989
               params:
                 unmonitored: true
             - type: radarr
-              service_group: Services
+              service_group: ARR
               service_name: Radarr
               color: teal
+              baseUrl: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:7878
               params:
                 unmonitored: true
 - Infra:
@@ -154,16 +156,12 @@
           type: readarr
           url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8787
           key: "{{HOMEPAGE_VAR_READARR_API_KEY}}"
-    - Lidarr:
-        icon: lidarr.png
-        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8686
-        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8686
+    - Synthwave:
+        icon: https://raw.githubusercontent.com/PranavVerma-droid/Synthwave/refs/heads/master/static/logo/logo.jpg
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5000
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5000
         server: druv-docker
-        container: lidarr
-        widget:
-          type: lidarr
-          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8686
-          key: "{{HOMEPAGE_VAR_LIDARR_API_KEY}}"
+        container: qdrant
     - Prowlarr:
         icon: prowlarr.png
         href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9696
@@ -205,3 +203,16 @@
           type: bazarr
           url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:6767
           key: "{{HOMEPAGE_VAR_BAZARR_API_KEY}}"
+- Tools:
+    - Filebrowser:
+        icon: https://filebrowserquantum.com/logo.svg
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8091
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8091
+        server: druv-docker
+        container: filebrowser
+    - Qdrant:
+        icon: https://qdrant.tech/img/qdrant-logo.svg
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:6333/dashboard
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:6333/dashboard
+        server: druv-docker
+        container: qdrant

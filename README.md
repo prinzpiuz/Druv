@@ -52,6 +52,7 @@ If you want to set up your server environment to match this repo exactly
 | [QbitManage](arr/.env.sample) | Torrent management tool | /configs |
 | [Purgarr](https://github.com/steveharsant/purgarr) | Cleanup automation | /configs |
 | [SwurApp](https://github.com/OwlCaribou/swurApp) | Companion utility | /configs |
+| [Synthwave](https://github.com/PranavVerma-droid/Synthwave) | Music Downloader| /configs|
 
 ---
 
@@ -62,7 +63,6 @@ If you want to set up your server environment to match this repo exactly
 
 | Name | Description | Config |
 |------|-------------|--------|
-| [Restic](https://restic.net/) | Fast, secure backups |  /configs |
 | [Backrest](https://github.com/garethgeorge/backrest) | Simple backup management |  /configs |
 
 ---
@@ -74,12 +74,10 @@ If you want to set up your server environment to match this repo exactly
 
 | Name | Description | Config |
 |------|-------------|--------|
-| [InfluxDB](https://github.com/influxdata/influxdb) | Metrics and monitoring |  /configs |
-| [Scrutiny](https://github.com/AnalogJ/scrutiny) | SMART drive monitoring |  /configs |
 | [Docker Proxy](https://github.com/Tecnativa/docker-socket-proxy) | Secure Docker socket proxy |  /configs |
 | [Homepage](https://github.com/gethomepage/homepage) | Dashboard for homelab |  [configs](infra/configs/homepage)|
 | [MySpeed](https://github.com/gnmyt/myspeed) | Self-hosted speed test |  /configs |
-| [Uptime-Kuma]() | Uptime Monitor | /configs |
+
 
 ---
 
@@ -125,8 +123,16 @@ Configure environment variables by copying and editing the env File as needed.
 
 ---
 
+#### Never Down Stack
 
+* [Never Down Compose File](never-down.yml)
+* [env File](.env.sample)
 
+| Name | Description | Config |
+|------|-------------|--------|
+| [Uptime-Kuma](https://uptimekuma.org/) | Uptime Monitor | /configs |
+| [Beszel](https://beszel.dev/) | System Monitoring | /configs |
+| [Quantum File Browser](https://filebrowserquantum.com/) | File Browser | /configs |
 
 ### Debug
 
