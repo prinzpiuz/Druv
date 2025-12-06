@@ -1,14 +1,4 @@
 services:
-  portainer-ce:
-    image: portainer/portainer-ce:latest
-    container_name: portainer
-    restart: always
-    pull_policy: always
-    ports:
-      - 9000:9000
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /data/portainer_data:/data
   uptime-kuma:
     image: louislam/uptime-kuma:2
     container_name: uptime-kuma
@@ -37,6 +27,24 @@ services:
     volumes:
       - /configs/beszel_server_data/beszel_data:/beszel_data
       - /configs/beszel_server_data/beszel_socket:/beszel_socket
+  filebrowser:
+    image: gtstef/filebrowser:latest
+    container_name: filebrowser
+    pull_policy: always
+    env_file:
+      - .env
+    restart: unless-stopped
+    environment:
+      - FILEBROWSER_CONFIG=/home/filebrowser/data/config.yaml # overrides the default path which is ./config.yaml
+      - FILEBROWSER_ADMIN_PASSWORD=${BESZEL_PASSWORD}
+      - TZ=${TZ}
+    volumes:
+      - /data:/druv/data
+      - /configs:/druv/configs
+      - /home/druv:/druv/home
+      - /configs/filebrowser/data:/home/filebrowser/data
+    ports:
+      - 8091:8091
 networks:
   homelab:
     name: ${NETWORK_NAME}

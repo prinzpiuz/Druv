@@ -165,27 +165,21 @@ services:
     networks:
       default:
         ipv4_address: ${SONARR_IPV4_ADDR}
-  lidarr:
-    image: lscr.io/linuxserver/lidarr:latest
-    container_name: lidarr
+  synthwave:
+    image: ghcr.io/pranavverma-droid/synthwave:latest
+    container_name: synthwave
     restart: unless-stopped
     pull_policy: always
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=${TZ}
-    volumes:
-      - /configs/lidarr/config:/config
-      - /data:/data
     ports:
-      - 8686:8686
-    depends_on:
-      - gluetun
-    env_file:
-      - .env
-    networks:
-      default:
-        ipv4_address: ${LIDARR_IPV4_ADDR}
+      - 5000:5000
+    volumes:
+      - /data/media/music:/music
+      - /data/media/music:/playlists
+      - /configs/synthwave/config:/app/config
+      - /configs/synthwave/logs:/app/logs
+    environment:
+      - TZ=${TZ}
+      - FLASK_ENV=production
   swurApp:
     image: owlcaribou/swurapp
     container_name: sonarrWatchUntilRelease
