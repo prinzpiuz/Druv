@@ -1,5 +1,0 @@
-- Bookmarks:
-    - Qdrant Dashboard:
-        - icon: https://qdrant.tech/img/qdrant-logo.svg
-          description: Vector Search Engine
-          href: http://${SERVER_URL}:6333/dashboard
