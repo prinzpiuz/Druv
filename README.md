@@ -49,8 +49,6 @@ If you want to set up your server environment to match this repo exactly
 | [Recyclarr](https://recyclarr.dev/) | Config sync for *Arr apps | /configs |
 | [Unpackerr](https://github.com/Unpackerr/unpackerr) | Unpack Downloaded Files |/configs |
 | [Flaresolverr](https://github.com/FlareSolverr/FlareSolverr) | Captcha solver | /configs |
-| [QbitManage](arr/.env.sample) | Torrent management tool | /configs |
-| [Purgarr](https://github.com/steveharsant/purgarr) | Cleanup automation | /configs |
 | [SwurApp](https://github.com/OwlCaribou/swurApp) | Companion utility | /configs |
 | [Synthwave](https://github.com/PranavVerma-droid/Synthwave) | Music Downloader| /configs|
 
@@ -88,8 +86,8 @@ If you want to set up your server environment to match this repo exactly
 
 | Name | Description | Config |
 |------|-------------|--------|
-| [Audiobookshelf](https://www.audiobookshelf.org/) | Audiobooks streaming server |  /configs |
-| [Jellyfin](https://jellyfin.org/) | Media server |  /configs |
+| [Audiobookshelf](https://www.audiobookshelf.org/) | Audiobooks streaming server | /configs |
+| [Jellyfin](https://jellyfin.org/) | Media server | /configs |
 | [Jellyseerr](https://github.com/Fallenbagel/jellyseerr) | Request manager for Jellyfin | /configs |
 ---
 
