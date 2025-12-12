@@ -65,58 +65,6 @@ services:
     depends_on:
       gluetun:
         condition: service_healthy
-  purgarr:
-    image: ghcr.io/steveharsant/purgarr:latest
-    container_name: purgarr
-    environment:
-      - TORRENT_AGE=30
-      - QBIT_URL=${QBIT_TORRENT_IPV4_ADDR}:8080
-      - QBIT_PASSWORD=${QBIT_PASSWORD}
-      - QBIT_USER=${QBIT_USER}
-      - SONARR_API_KEY=${SONARR_API_KEY}
-      - SONARR_URL=${SONARR_IPV4_ADDR}:8989
-      - RADARR_API_KEY=${RADARR_API_KEY}
-      - RADARR_URL=${RADARR_IPV4_ADDR}:7878
-    pull_policy: always
-    restart: always
-    env_file:
-      - .env
-    depends_on:
-      - qbittorrent
-  qbit_manage:
-    image: ghcr.io/stuffanthings/qbit_manage:latest
-    container_name: qbit_manage
-    pull_policy: always
-    volumes:
-      - /configs/qbit_manage:/config:rw
-      - /data:/data:rw
-      - /data/torrents:/data/torrents:rw
-    environment:
-      - QBT_RUN=false
-      - QBT_SCHEDULE=1440
-      - QBT_CONFIG=config.yml
-      - QBT_LOGFILE=activity.log
-      - QBT_CROSS_SEED=true
-      - QBT_RECHECK=true
-      - QBT_CAT_UPDATE=true
-      - QBT_TAG_UPDATE=true
-      - QBT_REM_UNREGISTERED=false
-      - QBT_REM_ORPHANED=false
-      - QBT_TAG_TRACKER_ERROR=true
-      - QBT_TAG_NOHARDLINKS=true
-      - QBT_SHARE_LIMITS=false
-      - QBT_SKIP_CLEANUP=false
-      - QBT_DRY_RUN=false
-      - QBT_LOG_LEVEL=INFO
-      - QBT_DIVIDER==
-      - QBT_WIDTH=100
-    restart: unless-stopped
-    depends_on:
-      - qbittorrent
-    env_file:
-      - .env
-    networks:
-      - ${NETWORK_NAME}
   radarr:
     image: ghcr.io/hotio/radarr:latest
     container_name: radarr
@@ -278,7 +226,7 @@ services:
       - /configs/recyclarr:/config
     restart: always
     environment:
-      - CRON_SCHEDULE="* * * * *"
+      - CRON_SCHEDULE=* * * * *
       - TZ=${TZ}
     env_file:
       - .env
