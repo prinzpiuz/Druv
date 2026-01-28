@@ -146,16 +146,6 @@
           type: sonarr
           url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8989
           key: "{{HOMEPAGE_VAR_SONARR_API_KEY}}"
-    - Readarr:
-        icon: readarr.png
-        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8787
-        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8787
-        server: druv-docker
-        container: readarr
-        widget:
-          type: readarr
-          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8787
-          key: "{{HOMEPAGE_VAR_READARR_API_KEY}}"
     - Synthwave:
         icon: https://raw.githubusercontent.com/PranavVerma-droid/Synthwave/refs/heads/master/static/logo/logo.jpg
         href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5000
@@ -210,6 +200,12 @@
         ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8091
         server: druv-docker
         container: filebrowser
+    - PDF Tools:
+        icon: https://raw.githubusercontent.com/alam00000/bentopdf/eb60bbe771f578a3eb609718ad0e01d92dcae1ac/public/images/favicon-no-bg.svg
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8085
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8085
+        server: druv-docker
+        container: bentopdf
     - Qdrant:
         icon: https://qdrant.tech/img/qdrant-logo.svg
         href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:6333/dashboard
