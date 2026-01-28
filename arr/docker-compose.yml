@@ -140,28 +140,6 @@ services:
       - BASE_URL=http://${SONARR_IPV4_ADDR}:8989
       - DELAY_IN_MINUTES=60
       - IGNORE_TAG_NAME=ignore
-  readarr:
-    image: ghcr.io/hotio/readarr
-    container_name: readarr
-    pull_policy: always
-    restart: unless-stopped
-    ports:
-      - 8787:8787
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - UMASK=002
-      - TZ=${TZ}
-    volumes:
-      - /configs/readarr:/config
-      - /data:/data
-    depends_on:
-      - gluetun
-    env_file:
-      - .env
-    networks:
-      default:
-        ipv4_address: ${READARR_IPV4_ADDR}
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr

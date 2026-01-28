@@ -89,6 +89,7 @@ If you want to set up your server environment to match this repo exactly
 | [Audiobookshelf](https://www.audiobookshelf.org/) | Audiobooks streaming server | /configs |
 | [Jellyfin](https://jellyfin.org/) | Media server | /configs |
 | [Jellyseerr](https://github.com/Fallenbagel/jellyseerr) | Request manager for Jellyfin | /configs |
+
 ---
 
 #### 🌐 Public
@@ -118,6 +119,7 @@ Configure environment variables by copying and editing the env File as needed.
 | Name | Description | Config |
 |------|-------------|--------|
 | [Qdarnt](https://qdrant.tech/) | Vector DB |  /configs |
+| [BentoPDF](https://github.com/alam00000/bentopdf) | PDF Tools |  /configs |
 
 ---
 
