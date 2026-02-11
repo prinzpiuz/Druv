@@ -143,9 +143,9 @@ main() {
     sleep 5
     if [ "$1" == "--all" ]; then
         prune_and_network_setup
-        no_down_restart
     fi
     docker_up
+    no_down_restart
 }
 
 
