@@ -43,7 +43,7 @@ setup_environment() {
 docker_down() {
     success_log "Stopping Docker Compose services..."
 
-    if ! docker compose down --remove-orphans; then
+    if ! docker compose --file docker-compose.yml down --remove-orphans; then
         error_log "Failed to stop services" >&2
         docker_kill
         if ! docker compose down --remove-orphans; then

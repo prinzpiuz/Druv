@@ -120,6 +120,7 @@ Configure environment variables by copying and editing the env File as needed.
 |------|-------------|--------|
 | [Qdarnt](https://qdrant.tech/) | Vector DB |  /configs |
 | [BentoPDF](https://github.com/alam00000/bentopdf) | PDF Tools |  /configs |
+| [dawarich](https://dawarich.app/) | Timeline Tracker |  /configs |
 
 ---
 

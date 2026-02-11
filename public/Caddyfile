@@ -2,8 +2,16 @@
     http_port 8082
 }
 
-${DOMAIN}:${PORT} {
-    reverse_proxy ${REVERSE_PROXY_URL}:${REVERSE_PROXY_PORT}
+${JELLYFIN}:${JELLYFIN_PORT} {
+    reverse_proxy ${REVERSE_PROXY_URL}:${JELLYFIN_REVERSE_PROXY_PORT}
+    tls {
+        dns cloudflare ${CLOUDFLARE_API_TOKEN}
+    }
+}
+
+
+${DAWARICH}:${DAWARICH_PORT} {
+    reverse_proxy ${REVERSE_PROXY_URL}:${DAWARICH_REVERSE_PROXY_PORT}
     tls {
         dns cloudflare ${CLOUDFLARE_API_TOKEN}
     }

@@ -94,6 +94,7 @@
           type: jellyfin
           url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8096
           key: "{{HOMEPAGE_VAR_JELLYFIN_API_KEY}}"
+          version: 2
           enableBlocks: true
           enableNowPlaying: true
           enableUser: true
@@ -212,3 +213,9 @@
         ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:6333/dashboard
         server: druv-docker
         container: qdrant
+    - Location:
+        icon: https://dawarich.app/img/logo.svg
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8086
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8086
+        server: druv-docker
+        container: dawarich_app

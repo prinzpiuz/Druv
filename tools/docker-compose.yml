@@ -1,4 +1,6 @@
 name: Tools
+include:
+  - path: ./dawarich/docker-compose.yml
 services:
   qdrant:
     image: qdrant/qdrant:latest
