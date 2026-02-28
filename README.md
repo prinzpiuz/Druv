@@ -62,6 +62,18 @@ From My homelab I Have made a few services available to public under [prinzpiuz.
 
 ---
 
+#### 🤖 Automation Stack
+
+* [Automation Compose File](automation/docker-compose.yml)
+* [env File](automation/.env.sample)
+
+| Name | Description | Config |
+|------|-------------|--------|
+| [n8n](https://github.com/n8n-io/n8n) | Work Flow Automations |  [workflows](automation/workflows) |
+
+
+---
+
 #### 🔒 Backup Stack
 
 * [Backup Compose File](backup/docker-compose.yml)

@@ -1,6 +1,7 @@
 name: Homelab Setup
 include:
   - ./arr/docker-compose.yml
+  - ./automation/docker-compose.yml
   - ./infra/docker-compose.yml
   - ./media/docker-compose.yml
   - ./backup/docker-compose.yml

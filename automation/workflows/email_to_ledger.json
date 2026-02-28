@@ -1,0 +1,302 @@
+{"id": "1",
+  "name": "Email Transaction to Ledger CLI",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Run Every 6 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "filters": {
+          "readStatus": "unread",
+          "receivedAfter": "={{ $now.minus(6, 'hours').toISO() }}",
+          "sender": "",
+          "labelIds": ["transaction"]
+        },
+        "options": {
+          "maxResults": 50
+        }
+      },
+      "id": "gmail-read",
+      "name": "Fetch Transaction Emails",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [220, 0],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": -1,
+        "options": {}
+      },
+      "id": "aggregate-emails",
+      "name": "Aggregate All Emails",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-sonnet-4-20250514",
+          "mode": "list"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a plain-text accounting expert that converts bank/credit card transaction email notifications into Ledger CLI format entries.\n\nRULES:\n1. Date format: YYYY/MM/DD\n2. Currency: Always INR with ₹ symbol\n3. Amounts must have exactly 2 decimal places (e.g., ₹687.71)\n4. Use 4 spaces for indentation before account lines\n5. The second account line (source/payment account) should have NO amount - Ledger CLI infers it\n6. Each entry is separated by a blank line\n7. Payee/description goes on the same line as the date\n\nAVAILABLE EXPENSE ACCOUNTS (use the closest match, create a new sub-account ONLY if nothing fits):\nExpenses:Tea\nExpenses:Food\nExpenses:Food:Sweets\nExpenses:Food:IceCream\nExpenses:DiningOut\nExpenses:Groceries\nExpenses:Groceries:Milk\nExpenses:Groceries:Butter\nExpenses:Groceries:Vegetables\nExpenses:Groceries:Egg\nExpenses:Groceries:Curd\nExpenses:Groceries:Chapathi\nExpenses:Fruits\nExpenses:Meat:Chicken\nExpenses:Meat:Fish\nExpenses:Meat:Pork\nExpenses:Bar\nExpenses:Fuel\nExpenses:HairCut\nExpenses:Medical\nExpenses:Miscellaneous\nExpenses:Cloth\nExpenses:Entertainment:Movie\nExpenses:Amazon\nExpenses:Amazon:Gadgets:Headphone\nExpenses:Amazon:Gadgets:HardDisk\nExpenses:Amazon:Gadgets:UPS\nExpenses:Amazon:Gadgets:Watch\nExpenses:Amazon:Miscellaneous\nExpenses:Subscriptions:Youtube\nExpenses:Subscriptions:Spotify\nExpenses:Subscriptions:VPN\nExpenses:Subscriptions:Gym\nExpenses:Subscriptions:BitWarden\nExpenses:Subscriptions:NoBroker\nExpenses:Bills:Electricity\nExpenses:Bills:Internet\nExpenses:Bills:FastTag\nExpenses:Bills:Parking\nExpenses:Bills:Repair:Cycle\nExpenses:Bills:Repair:Laptop\nExpenses:Bills:Repair:Plumbing\nExpenses:Insurance:Car\nExpenses:Insurance:Life\nExpenses:Car:Painting\nExpenses:Car:Washing\nExpenses:SelfCare:Dress\nExpenses:SelfCare:Floss\nExpenses:Travel:Uber\nExpenses:Travel:Metro\nExpenses:Travel:TrainTicket\nExpenses:Travel:Benguluru:Stay\nExpenses:Travel:Benguluru:Food\nExpenses:Travel:Benguluru:Metro\nExpenses:Travel:Benguluru:Miscellaneous\nExpenses:Travel:Benguluru:Entertainment\nExpenses:Travel:Benguluru:Baggage\nExpenses:Donations:Marriage\nExpenses:Donations:Wikipedia\nExpenses:Applications:Passport\nExpenses:Family:HouseHolds\nExpenses:Family:HouseHolds:Fridge\nExpenses:Family:HouseHolds:Ikea\nExpenses:Family:AquaGuard\nExpenses:Celebration:NewYearEve\nExpenses:KSFE\n\nAVAILABLE PAYMENT SOURCE ACCOUNTS:\nLiabilities:Credit:SBICreditCard\nLiabilities:Credit:ICICICreditCard\nLiabilities:Credit:FederalBankCreditCard\nAssets:Banking:FederalBank\nAssets:Banking:ICICIBANK\nAssets:Banking:SBIFamilyAccount\nAssets:Banking:SBIPersonal\nAssets:AmazonPay\nAssets:Broker:Zerodha\n\nAVAILABLE INCOME ACCOUNTS:\nIncome:Salary:Nuventure\nIncome:Dividend:TataSteel\nIncome:BankTransfer:Anjali\nIncome:BankTransfer:Merin\nIncome:BankTransfer:Pappa\nIncome:Refund\nIncome:GooglePay\nIncome:CreditGiven\nIncome:PF:Nuventure\n\nOTHER ACCOUNTS:\nLiabilities:Loans:SBI:CarLoan\nCreditGiven:Varun\nCreditGiven:Joseph\nCreditGiven:Paul\nCreditGiven:AthulPaul\nCreditGiven:Nayana\nCreditGiven:Sugunan\nAssets:EPFO\n\nINSTRUCTIONS:\n- Identify the payment source from the email (which card or bank account was used)\n- Match the merchant/transaction to the best expense category\n- Extract the exact amount from the email\n- Extract the exact date from the email\n- If the email is NOT a transaction notification (e.g., marketing, OTP, statement summary), output SKIP on that line\n- Output ONLY the ledger entries, nothing else. No explanations, no markdown, no code fences.\n\nHere are the transaction emails to process:\n\n{{ $json.data.map((item, i) => `--- EMAIL ${i+1} ---\\nFrom: ${item.from}\\nSubject: ${item.subject}\\nDate: ${item.date}\\nBody: ${item.snippet || item.textPlain || item.text || ''}`).join('\\n\\n') }}",
+              "role": "user"
+            }
+          ]
+        },
+        "options": {
+          "maxTokensToSample": 4096,
+          "temperature": 0
+        }
+      },
+      "id": "claude-extract",
+      "name": "Claude - Extract Transactions",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [660, 0],
+      "credentials": {
+        "anthropicApi": {
+          "id": "YOUR_ANTHROPIC_CREDENTIAL_ID",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the Claude response text\nconst response = $input.first().json;\nlet text = response.message?.content || response.text || response.output || '';\n\n// If response is nested, try to extract\nif (typeof text === 'object') {\n  text = JSON.stringify(text);\n}\ntext = String(text).trim();\n\n// Filter out SKIP lines and clean up\nconst lines = text.split('\\n');\nconst filteredLines = lines.filter(line => line.trim() !== 'SKIP');\nconst ledgerContent = filteredLines.join('\\n').trim();\n\nif (!ledgerContent || ledgerContent === 'SKIP') {\n  return [{ json: { hasEntries: false, ledgerContent: '' } }];\n}\n\n// Count entries (each entry starts with a date pattern YYYY/MM/DD)\nconst entryCount = (ledgerContent.match(/^\\d{4}\\/\\d{2}\\/\\d{2}/gm) || []).length;\n\nreturn [{ \n  json: { \n    hasEntries: true, \n    ledgerContent: ledgerContent,\n    entryCount: entryCount,\n    generatedAt: new Date().toISOString()\n  } \n}];"
+      },
+      "id": "process-response",
+      "name": "Process Claude Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-entries",
+              "leftValue": "={{ $json.hasEntries }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-has-entries",
+      "name": "Has Entries?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1100, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ledgerContent = $input.first().json.ledgerContent;\nconst entryCount = $input.first().json.entryCount;\nconst today = new Date().toISOString().split('T')[0];\n\n// Create the file content as a binary buffer\nconst binaryData = Buffer.from(ledgerContent + '\\n', 'utf-8');\n\nreturn [{\n  json: {\n    entryCount: entryCount,\n    fileName: `ledger-entries-${today}.ledger`\n  },\n  binary: {\n    data: {\n      data: binaryData.toString('base64'),\n      mimeType: 'text/plain',\n      fileName: `ledger-entries-${today}.ledger`,\n      fileExtension: 'ledger'\n    }\n  }\n}];"
+      },
+      "id": "create-file",
+      "name": "Create Ledger File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 0]
+    },
+    {
+      "parameters": {
+        "sendTo": "YOUR_EMAIL@gmail.com",
+        "subject": "=Ledger Entries - {{ $now.format('yyyy-MM-dd') }} ({{ $json.entryCount }} transactions)",
+        "emailType": "text",
+        "message": "={{ $json.entryCount }} new ledger entries extracted from your transaction emails.\n\nReview the attached .ledger file and append its contents to your main ledger.\n\nGenerated at: {{ $now.format('yyyy-MM-dd HH:mm') }}",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "binaryPropertyName": "data"
+              }
+            ]
+          }
+        }
+      },
+      "id": "send-email",
+      "name": "Email Ledger File",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1540, 0],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "filters": {
+          "readStatus": "unread",
+          "receivedAfter": "={{ $now.minus(6, 'hours').toISO() }}",
+          "labelIds": ["transaction"]
+        },
+        "options": {}
+      },
+      "id": "mark-read",
+      "name": "Mark Emails as Read",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1760, 0],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "no-entries",
+      "name": "No New Transactions",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1320, 200]
+    }
+  ],
+  "connections": {
+    "Run Every 6 Hours": {
+      "main": [
+        [
+          {
+            "node": "Fetch Transaction Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Transaction Emails": {
+      "main": [
+        [
+          {
+            "node": "Aggregate All Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate All Emails": {
+      "main": [
+        [
+          {
+            "node": "Claude - Extract Transactions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude - Extract Transactions": {
+      "main": [
+        [
+          {
+            "node": "Process Claude Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Claude Response": {
+      "main": [
+        [
+          {
+            "node": "Has Entries?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Entries?": {
+      "main": [
+        [
+          {
+            "node": "Create Ledger File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No New Transactions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Ledger File": {
+      "main": [
+        [
+          {
+            "node": "Email Ledger File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Ledger File": {
+      "main": [
+        [
+          {
+            "node": "Mark Emails as Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "finance"
+    },
+    {
+      "name": "automation"
+    }
+  ]
+}

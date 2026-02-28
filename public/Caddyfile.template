@@ -30,3 +30,10 @@ pdftools.prinzpiuz.in {
         dns cloudflare ${CLOUDFLARE_API_TOKEN}
     }
 }
+
+workflows.prinzpiuz.in {
+    reverse_proxy ${REVERSE_PROXY_URL}:5678
+    tls {
+        dns cloudflare ${CLOUDFLARE_API_TOKEN}
+    }
+}
