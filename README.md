@@ -29,6 +29,14 @@ If you want to set up your server environment to match this repo exactly
 
 ---
 
+### Public Services
+
+From My homelab I Have made a few services available to public under [prinzpiuz.in](https://prinzpiuz.in). Feel free to use them if you find them useful.
+
+ - [BloTils](https://blotils.prinzpiuz.in) - Blog Utilites
+ - [PDF Tools](htpps://pdftools.prinzpiuz.in) - PDF Tools, That run in your browser
+
+
 ### Stack
 
 #### 📦 Arr Stack
@@ -121,6 +129,7 @@ Configure environment variables by copying and editing the env File as needed.
 | [Qdarnt](https://qdrant.tech/) | Vector DB |  /configs |
 | [BentoPDF](https://github.com/alam00000/bentopdf) | PDF Tools |  /configs |
 | [dawarich](https://dawarich.app/) | Timeline Tracker |  /configs |
+| [BloTils](https://github.com/prinzpiuz/BloTils) | Blog Utilities |  /configs |
 
 ---
 

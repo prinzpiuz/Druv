@@ -7,12 +7,6 @@ services:
     environment:
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
       - REVERSE_PROXY_URL=${REVERSE_PROXY_URL}
-      - JELLYFIN=${JELLYFIN}
-      - JELLYFIN_PORT=${JELLYFIN_PORT}
-      - JELLYFIN_REVERSE_PROXY_PORT=${JELLYFIN_REVERSE_PROXY_PORT}
-      - DAWARICH=${DAWARICH}
-      - DAWARICH_PORT=${DAWARICH_PORT}
-      - DAWARICH_REVERSE_PROXY_PORT=${DAWARICH_REVERSE_PROXY_PORT}
     env_file:
       - .env
     volumes:
@@ -21,11 +15,6 @@ services:
       - ./caddy_data:/data
       - ./caddy_config:/config
       - ./start_caddy.sh:/start_caddy.sh
-    ports:
-      #TODO open the ports in server too
-      - 8920:8920
-      - 8082:8082
-      - 8086:8086
     restart: unless-stopped
     entrypoint: ["/bin/sh", "/start_caddy.sh"]
   beszel-agent:

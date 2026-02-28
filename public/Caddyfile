@@ -1,18 +1,35 @@
-{
-    http_port 8082
-}
-
-${JELLYFIN}:${JELLYFIN_PORT} {
-    reverse_proxy ${REVERSE_PROXY_URL}:${JELLYFIN_REVERSE_PROXY_PORT}
-    tls {
-        dns cloudflare ${CLOUDFLARE_API_TOKEN}
+blotils.prinzpiuz.in {
+    reverse_proxy <tailscale_ip>:8000
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
     }
 }
 
+jellyfin.prinzpiuz.in {
+    reverse_proxy <tailscale_ip>:8096
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    }
+}
 
-${DAWARICH}:${DAWARICH_PORT} {
-    reverse_proxy ${REVERSE_PROXY_URL}:${DAWARICH_REVERSE_PROXY_PORT}
-    tls {
-        dns cloudflare ${CLOUDFLARE_API_TOKEN}
+timeline.prinzpiuz.in {
+    reverse_proxy <tailscale_ip>:8086
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    }
+}
+
+pdftools.prinzpiuz.in {
+    reverse_proxy <tailscale_ip>:8085
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
     }
 }

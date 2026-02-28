@@ -203,7 +203,7 @@
         container: filebrowser
     - PDF Tools:
         icon: https://raw.githubusercontent.com/alam00000/bentopdf/eb60bbe771f578a3eb609718ad0e01d92dcae1ac/public/images/favicon-no-bg.svg
-        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8085
+        href: https://pdftools.prinzpiuz.in
         ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8085
         server: druv-docker
         container: bentopdf
@@ -215,7 +215,13 @@
         container: qdrant
     - Location:
         icon: https://dawarich.app/img/logo.svg
-        href: https://timeline.prinzpiuz.in:8086
+        href: https://timeline.prinzpiuz.in
         ping: https://{{HOMEPAGE_VAR_HOMELAB_IP}}:8086
         server: druv-docker
         container: dawarich_app
+    - BloTils:
+        icon: https://raw.githubusercontent.com/prinzpiuz/BloTils/refs/heads/staging/static/favicon/android-chrome-512x512.png
+        href: https://blotils.prinzpiuz.in
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8087
+        server: druv-docker
+        container: blotils
