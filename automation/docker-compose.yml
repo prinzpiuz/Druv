@@ -1,0 +1,35 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    pull_policy: always
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - 5678:5678
+    env_file:
+      - .env
+    environment:
+      - GENERIC_TIMEZONE=${TZ}
+      - TZ=${TZ}
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PROTOCOL=${N8N_PROTOCOL}
+      - N8N_PORT=${N8N_PORT}
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - N8N_SECURE_COOKIE=false
+    volumes:
+      - /data/n8n_data:/home/node/.n8n
+      - ./workflows:/home/node/workflows:ro
+    networks:
+      - ${NETWORK_NAME}
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        for f in /home/node/workflows/*.json; do
+          [ -f "$$f" ] && n8n import:workflow --input="$$f" || true
+        done
+        n8n start
+networks:
+  default:
+    name: ${NETWORK_NAME}
+    external: true

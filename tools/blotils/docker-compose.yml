@@ -1,0 +1,22 @@
+services:
+  blotils:
+    image: ghcr.io/prinzpiuz/blotils:latest
+    container_name: blotils
+    restart: unless-stopped
+    pull_policy: always
+    networks:
+      - ${NETWORK_NAME}
+    ports:
+      - 8087:8000
+    env_file:
+      - ../.env
+    volumes:
+      - /data/BloTils_Data/BloTils.db:/blotils/BloTils.db
+      - /configs/BloTils_Data/config.json:/blotils/config.json
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

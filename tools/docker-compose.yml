@@ -1,6 +1,7 @@
 name: Tools
 include:
   - path: ./dawarich/docker-compose.yml
+  - path: ./blotils/docker-compose.yml
 services:
   qdrant:
     image: qdrant/qdrant:latest
@@ -12,7 +13,7 @@ services:
     volumes:
       - /data/qdrant_storage:/qdrant/storage:z
   bentopdf:
-    image: ghcr.io/alam00000/bentopdf:latest
+    image: ghcr.io/alam00000/bentopdf-simple:latest
     container_name: bentopdf
     restart: unless-stopped
     pull_policy: always

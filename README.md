@@ -29,6 +29,14 @@ If you want to set up your server environment to match this repo exactly
 
 ---
 
+### Public Services
+
+From My homelab I Have made a few services available to public under [prinzpiuz.in](https://prinzpiuz.in). Feel free to use them if you find them useful.
+
+ - [BloTils](https://blotils.prinzpiuz.in) - Blog Utilites
+ - [PDF Tools](htpps://pdftools.prinzpiuz.in) - PDF Tools, That run in your browser
+
+
 ### Stack
 
 #### 📦 Arr Stack
@@ -51,6 +59,18 @@ If you want to set up your server environment to match this repo exactly
 | [Flaresolverr](https://github.com/FlareSolverr/FlareSolverr) | Captcha solver | /configs |
 | [SwurApp](https://github.com/OwlCaribou/swurApp) | Companion utility | /configs |
 | [Synthwave](https://github.com/PranavVerma-droid/Synthwave) | Music Downloader| /configs|
+
+---
+
+#### 🤖 Automation Stack
+
+* [Automation Compose File](automation/docker-compose.yml)
+* [env File](automation/.env.sample)
+
+| Name | Description | Config |
+|------|-------------|--------|
+| [n8n](https://github.com/n8n-io/n8n) | Work Flow Automations |  [workflows](automation/workflows) |
+
 
 ---
 
@@ -121,6 +141,7 @@ Configure environment variables by copying and editing the env File as needed.
 | [Qdarnt](https://qdrant.tech/) | Vector DB |  /configs |
 | [BentoPDF](https://github.com/alam00000/bentopdf) | PDF Tools |  /configs |
 | [dawarich](https://dawarich.app/) | Timeline Tracker |  /configs |
+| [BloTils](https://github.com/prinzpiuz/BloTils) | Blog Utilities |  /configs |
 
 ---
 
