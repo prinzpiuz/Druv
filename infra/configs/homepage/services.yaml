@@ -225,3 +225,9 @@
         ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8087
         server: druv-docker
         container: blotils
+    - n8n:
+        icon: https://raw.githubusercontent.com/n8n-io/n8n/refs/heads/master/assets/n8n-logo.png
+        href: https://workflows.prinzpiuz.in
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5678
+        server: druv-docker
+        container: n8n
