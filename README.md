@@ -34,7 +34,7 @@ If you want to set up your server environment to match this repo exactly
 From my homelab, I have made a few services available to the public under [prinzpiuz.in](https://prinzpiuz.in). Feel free to use them if you find them useful.
 
  - https://blotils.prinzpiuz.in - Blog Utilites
- - htpps://pdftools.prinzpiuz.in - PDF Tools, that run in your browser
+ - https://pdftools.prinzpiuz.in - PDF Tools, that run in your browser
 
 
 ### Stack
