@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION="3.7.0"
+VERSION="3.7.1"
 SUBTEXT="Setup Scripts For A Homelab"
 
 cat << EOF
