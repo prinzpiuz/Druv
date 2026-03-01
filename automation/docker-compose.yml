@@ -13,9 +13,10 @@ services:
       - TZ=${TZ}
       - N8N_HOST=${N8N_HOST}
       - N8N_PROTOCOL=${N8N_PROTOCOL}
-      - N8N_PORT=${N8N_PORT}
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_SECURE_COOKIE=false
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - N8N_EDITOR_BASE_URL=${N8N_EDITOR_BASE_URL}
     volumes:
       - /data/n8n_data:/home/node/.n8n
       - ./workflows:/home/node/workflows:ro
