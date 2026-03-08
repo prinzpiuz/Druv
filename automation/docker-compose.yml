@@ -17,19 +17,12 @@ services:
       - N8N_SECURE_COOKIE=false
       - WEBHOOK_URL=${WEBHOOK_URL}
       - N8N_EDITOR_BASE_URL=${N8N_EDITOR_BASE_URL}
+      - EXECUTIONS_MODE=regular
     volumes:
       - /data/n8n_data:/home/node/.n8n
       - ./workflows:/home/node/workflows:ro
     networks:
       - ${NETWORK_NAME}
-    entrypoint: /bin/sh
-    command:
-      - -c
-      - |
-        for f in /home/node/workflows/*.json; do
-          [ -f "$$f" ] && n8n import:workflow --input="$$f" || true
-        done
-        n8n start
 networks:
   default:
     name: ${NETWORK_NAME}
