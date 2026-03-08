@@ -66,8 +66,9 @@ From My homelab I Have made a few services available to public under [prinzpiuz.
 
 * [Automation Compose File](automation/docker-compose.yml)
 * [env File](automation/.env.sample)
+* [My Workflows](automation/workflows)
 
-| Name | Description | Config |
+| Name | Description | Workflows |
 |------|-------------|--------|
 | [n8n](https://github.com/n8n-io/n8n) | Work Flow Automations |  [workflows](automation/workflows) |
 

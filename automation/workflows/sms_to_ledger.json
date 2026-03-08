@@ -1,0 +1,570 @@
+{
+  "name": "SMS to Ledger via Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-flash-latest",
+          "mode": "list",
+          "cachedResultName": "models/gemini-flash-latest"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a plain-text accounting expert. Parse the following bank SMS/transaction message and output a JSON object (no markdown, no code fences, just raw JSON).\n\nExtract these fields:\n- date: in YYYY/MM/DD format\n- payee: merchant or recipient name (clean it up, e.g., ZOMATOLIMITED becomes Zomato)\n- amount: numeric value with 2 decimal places\n- source_account: which account was used (match from the list below)\n- expense_account: best matching expense category (match from the list below)\n- is_transaction: true if this is a valid transaction, false if it's spam/OTP/marketing\n\nPAYMENT SOURCE ACCOUNTS (identify from SMS context - card type, bank name, last 4 digits):\n- SBI Credit Card ending 4718 → Liabilities:Credit:SBICreditCard\n- ICICI Bank Account XX516 → Assets:Banking:ICICIBANK\n- Federal Bank → Assets:Banking:FederalBank\n- ICICI Credit Card → Liabilities:Credit:ICICICreditCard\n- Federal Bank Credit Card → Liabilities:Credit:FederalBankCreditCard\n- SBI Family Account → Assets:Banking:SBIFamilyAccount\n- SBI Personal → Assets:Banking:SBIPersonal\n\nEXPENSE ACCOUNTS (use closest match):\nExpenses:Tea, Expenses:Food, Expenses:Food:Sweets, Expenses:DiningOut\nExpenses:Groceries, Expenses:Groceries:Milk, Expenses:Groceries:Vegetables\nExpenses:Fruits, Expenses:Meat:Chicken, Expenses:Meat:Fish, Expenses:Meat:Pork\nExpenses:Bar, Expenses:Fuel, Expenses:HairCut, Expenses:Medical, Expenses:Miscellaneous\nExpenses:Entertainment:Movie, Expenses:Amazon, Expenses:Amazon:Miscellaneous\nExpenses:Subscriptions:Youtube, Expenses:Subscriptions:Spotify, Expenses:Subscriptions:VPN\nExpenses:Bills:Electricity, Expenses:Bills:Internet, Expenses:Bills:FastTag\nExpenses:Insurance:Car, Expenses:Insurance:Life\nExpenses:Travel:Uber, Expenses:Travel:Metro, Expenses:Travel:TrainTicket\nExpenses:Cloth, Expenses:SelfCare:Dress\nExpenses:Donations:Marriage, Expenses:Family:HouseHolds\nExpenses:KSFE, Expenses:Car:Washing, Expenses:Car:Painting\nExpenses:Subscriptions:Gym, Expenses:Subscriptions:BitWarden\nExpenses:Bills:Repair:Cycle, Expenses:Bills:Repair:Laptop\n\nIf the payee is a food delivery app (Zomato, Swiggy) use Expenses:Food\nIf the payee is a restaurant or hotel, use Expenses:DiningOut\nIf you cannot determine the category, use Expenses:Miscellaneous\n\nEXAMPLE INPUT:\nRs.663.40 spent on your SBI Credit Card ending with 4718 at ZOMATOLIMITED on 07-03-26 via UPI\n\nEXAMPLE OUTPUT:\n{\"date\":\"2026/03/07\",\"payee\":\"Zomato\",\"amount\":663.40,\"source_account\":\"Liabilities:Credit:SBICreditCard\",\"expense_account\":\"Expenses:Food\",\"is_transaction\":true}\n\nNow parse this SMS:\n{{ $json.message.text }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {
+          "temperature": 0,
+          "topP": 1
+        }
+      },
+      "id": "12568e1c-2f79-4df6-a306-0316b50be66f",
+      "name": "Gemini - Parse SMS",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -240,
+        80
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "XLY008dIrieLWP8z",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n\n// Get original Telegram data - try multiple ways\nlet chatId, originalText;\n\ntry {\n  const telegramData = $('Telegram Trigger').first().json;\n  chatId = telegramData?.message?.chat?.id || telegramData?.chat?.id;\n  originalText = telegramData?.message?.text || telegramData?.text;\n} catch(e) {\n  // Fallback: not available via reference\n}\n\n// If still no chatId, check if it was passed through\nif (!chatId) {\n  chatId = item?.message?.chat?.id || item?.chat?.id || '';\n}\nif (!originalText) {\n  originalText = item?.message?.text || item?.text || '';\n}\n\nlet text = '';\n\n// Extract text from Gemini response\nif (item?.content?.parts) {\n  text = item.content.parts.map(p => p.text || '').join('');\n} else if (item?.candidates) {\n  text = item.candidates\n    .map(c => c.content?.parts?.map(p => p.text || '').join('') || '')\n    .join('');\n} else if (item?.text) {\n  text = item.text;\n} else if (item?.output) {\n  text = item.output;\n} else {\n  text = JSON.stringify(item);\n}\n\n// Clean up the text\ntext = text.replace(/```json/g, '').replace(/```/g, '').trim();\n\n// Try to parse JSON\nlet parsed;\ntry {\n  const temp = JSON.parse(text);\n  if (Array.isArray(temp)) {\n    parsed = typeof temp[0] === 'string' ? JSON.parse(temp[0]) : temp[0];\n  } else {\n    parsed = temp;\n  }\n} catch(e) {\n  const jsonMatch = text.match(/\\{[\\s\\S]*?\\}/);\n  if (jsonMatch) {\n    try {\n      parsed = JSON.parse(jsonMatch[0]);\n    } catch(e2) {\n      return [{ json: { error: true, isTransaction: false, chatId, rawText: text } }];\n    }\n  } else {\n    return [{ json: { error: true, isTransaction: false, chatId, rawText: text } }];\n  }\n}\n\nif (!parsed || !parsed.is_transaction) {\n  return [{ json: { error: false, isTransaction: false, chatId } }];\n}\n\nconst ledgerEntry = `${parsed.date} ${parsed.payee}\\n    ${parsed.expense_account}    ₹${parsed.amount.toFixed(2)}\\n    ${parsed.source_account}`;\n\nreturn [{\n  json: {\n    error: false,\n    isTransaction: true,\n    chatId: chatId,\n    ledgerEntry: ledgerEntry,\n    date: parsed.date,\n    payee: parsed.payee,\n    amount: parsed.amount,\n    sourceAccount: parsed.source_account,\n    expenseAccount: parsed.expense_account,\n    originalSms: originalText\n  }\n}];"
+      },
+      "id": "44e4b54e-401b-4df6-8d23-2bd71e1da8e1",
+      "name": "Build Ledger Entry",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "is-transaction",
+              "leftValue": "={{ $json.isTransaction }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9d2818f1-71e5-422b-882a-49fc5caa3dc2",
+      "name": "Valid Transaction?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "==Parsed Ledger Entry:\n\n{{ $json.ledgerEntry }}\n\nAmount: ₹{{ $json.amount }}\nPayee: {{ $json.payee }}\nCategory: {{ $json.expenseAccount }}\nSource: {{ $json.sourceAccount }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Approve",
+                    "additionalFields": {
+                      "callback_data": "approve"
+                    }
+                  },
+                  {
+                    "text": "Edit",
+                    "additionalFields": {
+                      "callback_data": "edit"
+                    }
+                  },
+                  {
+                    "text": "Reject",
+                    "additionalFields": {
+                      "callback_data": "reject"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "ab36506f-fbff-458a-ac0f-e7f191a1c3b3",
+      "name": "Send for Confirmation",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        80
+      ],
+      "webhookId": "898eea60-510e-4ff4-b719-2aae32ed7aa9",
+      "credentials": {
+        "telegramApi": {
+          "id": "RuJvBXel69e2gzQS",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "⚠️ This doesn't look like a transaction SMS. Please send a valid bank transaction message.",
+        "additionalFields": {}
+      },
+      "id": "bed29d6f-178b-4cc9-ac7a-5e3d065d9dcc",
+      "name": "Not a Transaction",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        496,
+        256
+      ],
+      "webhookId": "18610758-525b-4aa3-8096-52b4351bc5fa",
+      "credentials": {
+        "telegramApi": {
+          "id": "RuJvBXel69e2gzQS",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst data = input.callback_query?.data || '';\nconst chatId = input.callback_query?.message?.chat?.id || '';\nconst messageId = input.callback_query?.message?.message_id || '';\n\n// Extract ledger entry from the bot's original message text\n// The entry is between \"Parsed Ledger Entry:\" and \"Amount:\"\nconst originalMsg = input.callback_query?.message?.text || '';\nlet ledgerEntry = '';\n\nconst entryMatch = originalMsg.match(/Parsed Ledger Entry:\\s*\\n([\\s\\S]*?)\\n\\nAmount:/);\nif (entryMatch) {\n  ledgerEntry = entryMatch[1].trim();\n}\n\nlet action = '';\nif (data === 'approve') {\n  action = 'approve';\n} else if (data === 'edit') {\n  action = 'edit';\n} else if (data === 'reject') {\n  action = 'reject';\n}\n\nreturn [{\n  json: {\n    action,\n    ledgerEntry,\n    chatId: String(chatId),\n    messageId\n  }\n}];"
+      },
+      "id": "8c5e2729-f818-4e08-a0ec-b510ebd02359",
+      "name": "Parse Button Action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "is-approve",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "approve",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "eeccc00b-fc4c-472e-89cc-0e8e04c01e74",
+      "name": "Is Approve?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "is-reject",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "reject",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b73d63bc-625e-4675-8b16-0c43b39fb568",
+      "name": "Is Reject?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "prinzpiuz@gmail.com",
+        "subject": "=Ledger Entry - {{ $now.format('yyyy-MM-dd HH:mm') }}",
+        "emailType": "text",
+        "message": "=Approved ledger entry from SMS:\n\n{{ $json.ledgerEntry }}\n\nAppend this to your main ledger file.",
+        "options": {}
+      },
+      "id": "6cc6f3ea-4fbd-4f65-9668-fc998085c2ce",
+      "name": "Email Ledger Entry",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        480,
+        480
+      ],
+      "webhookId": "21ee70f5-5bf5-4b3b-95e3-07f78de0a1da",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "sf1rbEtul9ySqeCu",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "=✅ Entry approved and saved!\n\n{{ $json.ledgerEntry }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "53187af0-2053-4724-b6a5-59d7fbd9ae66",
+      "name": "Confirm Approved",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        640
+      ],
+      "webhookId": "db17b4f6-60ed-4cf6-af64-13e79cfdc74b",
+      "credentials": {
+        "telegramApi": {
+          "id": "RuJvBXel69e2gzQS",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "❌ Entry discarded.",
+        "additionalFields": {}
+      },
+      "id": "ce122d21-1510-4118-9bbd-8cf3f7754b0d",
+      "name": "Confirm Rejected",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        800
+      ],
+      "webhookId": "89f8c620-9641-44d5-b416-d07676744a89",
+      "credentials": {
+        "telegramApi": {
+          "id": "RuJvBXel69e2gzQS",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "✏️ Please send the corrected ledger entry in this format:\n\n```\nYYYY/MM/DD Payee Name\n    Expenses:Category    ₹Amount\n    Payment:Source\n```\n\nOr send a new SMS to re-parse.",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "3e84cb86-59a5-4ea3-b950-767d43d8acc8",
+      "name": "Ask for Edit",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        960
+      ],
+      "webhookId": "ebbb6ca6-12d6-4ac4-9c93-0af6bc564267",
+      "credentials": {
+        "telegramApi": {
+          "id": "RuJvBXel69e2gzQS",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nif (input.message) {\n  return [{ json: { ...input, routeType: 'message' } }];\n} else if (input.callback_query) {\n  return [{ json: { ...input, routeType: 'callback' } }];\n}\n\nreturn [{ json: { ...input, routeType: 'unknown' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -752,
+        304
+      ],
+      "id": "f96ecd00-faea-4052-a949-01957e55c739",
+      "name": "Route Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "46c232ed-5260-4ea0-a7fa-1160fc21675e",
+              "leftValue": "={{ $json.routeType }}",
+              "rightValue": "message",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -576,
+        336
+      ],
+      "id": "385f5c01-62fc-41af-975a-7539a946eb7c",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "id": "218357a0-371e-4d19-a49e-bc534eb2b25c",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -928,
+        304
+      ],
+      "webhookId": "sms-ledger-msg-trigger",
+      "credentials": {
+        "telegramApi": {
+          "id": "RuJvBXel69e2gzQS",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gemini - Parse SMS": {
+      "main": [
+        [
+          {
+            "node": "Build Ledger Entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Ledger Entry": {
+      "main": [
+        [
+          {
+            "node": "Valid Transaction?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid Transaction?": {
+      "main": [
+        [
+          {
+            "node": "Send for Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not a Transaction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Button Action": {
+      "main": [
+        [
+          {
+            "node": "Is Approve?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Approve?": {
+      "main": [
+        [
+          {
+            "node": "Email Ledger Entry",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Confirm Approved",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Reject?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Reject?": {
+      "main": [
+        [
+          {
+            "node": "Confirm Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ask for Edit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Input": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Gemini - Parse SMS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Parse Button Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Route Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "39564a63-ca45-4f5c-a953-90e99b564477",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c7d71a75037c751f6f2f99666ea4c568df9222f4ce344d5668d5a76dbbd5f1e6"
+  },
+  "id": "sQSUTFicnIRLXjto",
+  "tags": [
+    {
+      "updatedAt": "2026-03-08T05:36:39.339Z",
+      "createdAt": "2026-03-08T05:36:39.339Z",
+      "id": "9BkKJuAviAnHAbTV",
+      "name": "telegram"
+    },
+    {
+      "updatedAt": "2026-02-28T11:50:50.966Z",
+      "createdAt": "2026-02-28T11:50:50.966Z",
+      "id": "bqHd2IRLypCuwgeq",
+      "name": "automation"
+    },
+    {
+      "updatedAt": "2026-02-28T11:50:50.963Z",
+      "createdAt": "2026-02-28T11:50:50.963Z",
+      "id": "i46z159NONqT5p1e",
+      "name": "finance"
+    }
+  ]
+}
