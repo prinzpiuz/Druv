@@ -7,6 +7,7 @@ services:
     env_file:
       - ../.env
     volumes:
+      - /data/wger/static:/home/wger/static
       - /data/wger/media:/home/wger/media
     ports:
       - 8002:8000
@@ -36,7 +37,7 @@ services:
     volumes:
       - /data/wger/postgres:/var/lib/postgresql/data
     healthcheck:
-      test: pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
+      test: pg_isready -U ${WGER_POSTGRES_USER} -d ${WGER_POSTGRES_DB}
       interval: 10s
       timeout: 5s
       retries: 5
