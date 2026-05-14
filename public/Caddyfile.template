@@ -40,15 +40,12 @@ workflows.prinzpiuz.in {
 
 fitness.prinzpiuz.in {
     reverse_proxy ${REVERSE_PROXY_URL}:8002
-    header_up X-Forwarded-Proto {scheme}
-    header_up X-Forwarded-Host {host}
-    header_up X-Real-IP {remote_host}
-    tls {
-            dns cloudflare ${CLOUDFLARE_API_TOKEN}
-        }
     header {
         X-Content-Type-Options nosniff
         X-Frame-Options SAMEORIGIN
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    }
+    tls {
+        dns cloudflare ${CLOUDFLARE_API_TOKEN}
     }
 }
