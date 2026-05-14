@@ -39,7 +39,15 @@ workflows.prinzpiuz.in {
 }
 
 fitness.prinzpiuz.in {
-    reverse_proxy ${REVERSE_PROXY_URL}:8002
+    handle /static/* {
+        reverse_proxy ${REVERSE_PROXY_URL}:8003
+    }
+    handle /media/* {
+        reverse_proxy ${REVERSE_PROXY_URL}:8003
+    }
+    handle {
+        reverse_proxy ${REVERSE_PROXY_URL}:8002
+    }
     header {
         X-Content-Type-Options nosniff
         X-Frame-Options SAMEORIGIN

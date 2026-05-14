@@ -1,3 +1,7 @@
+---
+layout: default
+render_with_liquid: false
+---
 You are a plain-text accounting expert. Parse the following bank SMS/transaction message and output a JSON object (no markdown, no code fences, just raw JSON).
 
 Extract these fields:

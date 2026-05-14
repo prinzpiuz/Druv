@@ -231,3 +231,9 @@
         ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5678
         server: druv-docker
         container: n8n
+    - wger:
+        icon: https://raw.githubusercontent.com/wger-project/wger/master/wger/core/static/images/logos/logo.png
+        href: https://fitness.prinzpiuz.in
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8002
+        server: druv-docker
+        container: wger_web

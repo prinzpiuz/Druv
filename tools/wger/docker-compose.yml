@@ -7,7 +7,6 @@ services:
     env_file:
       - ../.env
     volumes:
-      - /data/wger/static:/home/wger/static
       - /data/wger/media:/home/wger/media
     ports:
       - 8002:8000
@@ -57,6 +56,17 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - ${NETWORK_NAME}
+  static:
+    image: nginx:alpine
+    container_name: wger_static
+    restart: unless-stopped
+    volumes:
+      - /data/wger/static:/usr/share/nginx/html/static:ro
+      - /data/wger/media:/usr/share/nginx/html/media:ro
+    ports:
+      - 8003:80
     networks:
       - ${NETWORK_NAME}
 networks:

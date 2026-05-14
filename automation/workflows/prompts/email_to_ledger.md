@@ -1,3 +1,7 @@
+---
+layout: default
+render_with_liquid: false
+---
 You are a plain-text accounting expert that converts bank/credit card transaction email notifications into Ledger CLI format entries.
 
 RULES:
