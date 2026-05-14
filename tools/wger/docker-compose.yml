@@ -1,0 +1,65 @@
+name: wger
+services:
+  web:
+    image: wger/server:latest
+    container_name: wger_web
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    volumes:
+      - /data/wger/static:/home/wger/static
+      - /data/wger/media:/home/wger/media
+    ports:
+      - 8002:8000
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8000
+      interval: 10s
+      timeout: 5s
+      start_period: 300s
+      retries: 5
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    networks:
+      - ${NETWORK_NAME}
+  db:
+    image: postgres:15-alpine
+    container_name: wger_db
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      - POSTGRES_USER=${WGER_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${WGER_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${WGER_POSTGRES_DB}
+    volumes:
+      - /data/wger/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ${NETWORK_NAME}
+  cache:
+    image: redis:7-alpine
+    container_name: wger_cache
+    restart: unless-stopped
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    deploy:
+      resources:
+        limits:
+          memory: 150M
+    healthcheck:
+      test: redis-cli ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ${NETWORK_NAME}
+networks:
+  default:
+    name: ${NETWORK_NAME}
+    external: true

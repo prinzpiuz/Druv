@@ -33,3 +33,12 @@ pdftools.prinzpiuz.in {
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
     }
 }
+
+fitness.prinzpiuz.in {
+    reverse_proxy <tailscale_ip>:8002
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    }
+}
