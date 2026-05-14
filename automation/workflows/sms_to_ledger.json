@@ -1,6 +1,122 @@
 {
-  "name": "SMS to Ledger via Telegram",
+  "name": "Email Transaction to Ledger CLI With Full Email Text",
   "nodes": [
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": true,
+        "simple": false,
+        "filters": {
+          "labelIds": [
+            "Label_3863799735100229879"
+          ]
+        },
+        "options": {
+
+        }
+      },
+      "id": "01f04910-f87c-4524-b29c-f9caac13d47a",
+      "name": "Fetch Transaction Emails",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [384, 32],
+      "webhookId": "62c0f3a8-0c3d-4aa6-840e-140178801b93",
+      "retryOnFail": false,
+      "executeOnce": false,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "sf1rbEtul9ySqeCu",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "include": "specifiedFields",
+        "fieldsToInclude": "id, threadId, snippet, Subject, To, html",
+        "options": {
+
+        }
+      },
+      "id": "017e908d-7e94-4076-936d-82ca1e1843bd",
+      "name": "Aggregate All Emails",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [608, 32]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-entries",
+              "leftValue": "={{ $json.hasEntries }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+
+        }
+      },
+      "id": "e42b569e-df0a-41ed-925b-0a1ca0cd7cc2",
+      "name": "Has Entries?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1504, 32]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst ledgerContent = input.ledgerContent;\nconst entryCount = input.entryCount;\nconst emailIds = input.emailIds || [];\nconst today = new Date().toISOString().split('T')[0];\n\nconst binaryData = Buffer.from(ledgerContent + '\\n', 'utf-8');\n\nreturn [{\n  json: {\n    entryCount: entryCount,\n    fileName: `ledger-entries-${today}.ledger`,\n    emailIds: emailIds\n  },\n  binary: {\n    data: {\n      data: binaryData.toString('base64'),\n      mimeType: 'text/plain',\n      fileName: `ledger-entries-${today}.ledger`,\n      fileExtension: 'ledger'\n    }\n  }\n}];"
+      },
+      "id": "e6982586-e44d-47c3-b0d3-0ced2e22dee3",
+      "name": "Create Ledger File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1696, 32]
+    },
+    {
+      "parameters": {
+        "sendTo": "prinzpiuz@gmail.com",
+        "subject": "=Ledger Entries - {{ $now.format('yyyy-MM-dd') }} ({{ $json.entryCount }} transactions)",
+        "emailType": "text",
+        "message": "={{ $json.entryCount }} new ledger entries extracted from your transaction emails.\n\nReview the attached .ledger file and append its contents to your main ledger.\n\nGenerated at: {{ $now.format('yyyy-MM-dd HH:mm') }}",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+
+              }
+            ]
+          }
+        }
+      },
+      "id": "0db27d84-6947-4d3d-913f-20d12d1d484d",
+      "name": "Email Ledger File",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1888, 32],
+      "webhookId": "80b7c0a4-2a6d-47d0-b5c1-91434433adef",
+      "alwaysOutputData": false,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "sf1rbEtul9ySqeCu",
+          "name": "Gmail account"
+        }
+      }
+    },
     {
       "parameters": {
         "modelId": {
@@ -12,25 +128,25 @@
         "messages": {
           "values": [
             {
-              "content": "=You are a plain-text accounting expert. Parse the following bank SMS/transaction message and output a JSON object (no markdown, no code fences, just raw JSON).\n\nExtract these fields:\n- date: in YYYY/MM/DD format\n- payee: merchant or recipient name (clean it up, e.g., ZOMATOLIMITED becomes Zomato)\n- amount: numeric value with 2 decimal places\n- source_account: which account was used (match from the list below)\n- expense_account: best matching expense category (match from the list below)\n- is_transaction: true if this is a valid transaction, false if it's spam/OTP/marketing\n\nPAYMENT SOURCE ACCOUNTS (identify from SMS context - card type, bank name, last 4 digits):\n- SBI Credit Card ending 4718 → Liabilities:Credit:SBICreditCard\n- ICICI Bank Account XX516 → Assets:Banking:ICICIBANK\n- Federal Bank → Assets:Banking:FederalBank\n- ICICI Credit Card → Liabilities:Credit:ICICICreditCard\n- Federal Bank Credit Card → Liabilities:Credit:FederalBankCreditCard\n- SBI Family Account → Assets:Banking:SBIFamilyAccount\n- SBI Personal → Assets:Banking:SBIPersonal\n\nEXPENSE ACCOUNTS (use closest match):\nExpenses:Tea, Expenses:Food, Expenses:Food:Sweets, Expenses:DiningOut\nExpenses:Groceries, Expenses:Groceries:Milk, Expenses:Groceries:Vegetables\nExpenses:Fruits, Expenses:Meat:Chicken, Expenses:Meat:Fish, Expenses:Meat:Pork\nExpenses:Bar, Expenses:Fuel, Expenses:HairCut, Expenses:Medical, Expenses:Miscellaneous\nExpenses:Entertainment:Movie, Expenses:Amazon, Expenses:Amazon:Miscellaneous\nExpenses:Subscriptions:Youtube, Expenses:Subscriptions:Spotify, Expenses:Subscriptions:VPN\nExpenses:Bills:Electricity, Expenses:Bills:Internet, Expenses:Bills:FastTag\nExpenses:Insurance:Car, Expenses:Insurance:Life\nExpenses:Travel:Uber, Expenses:Travel:Metro, Expenses:Travel:TrainTicket\nExpenses:Cloth, Expenses:SelfCare:Dress\nExpenses:Donations:Marriage, Expenses:Family:HouseHolds\nExpenses:KSFE, Expenses:Car:Washing, Expenses:Car:Painting\nExpenses:Subscriptions:Gym, Expenses:Subscriptions:BitWarden\nExpenses:Bills:Repair:Cycle, Expenses:Bills:Repair:Laptop\n\nIf the payee is a food delivery app (Zomato, Swiggy) use Expenses:Food\nIf the payee is a restaurant or hotel, use Expenses:DiningOut\nIf you cannot determine the category, use Expenses:Miscellaneous\n\nEXAMPLE INPUT:\nRs.663.40 spent on your SBI Credit Card ending with 4718 at ZOMATOLIMITED on 07-03-26 via UPI\n\nEXAMPLE OUTPUT:\n{\"date\":\"2026/03/07\",\"payee\":\"Zomato\",\"amount\":663.40,\"source_account\":\"Liabilities:Credit:SBICreditCard\",\"expense_account\":\"Expenses:Food\",\"is_transaction\":true}\n\nNow parse this SMS:\n{{ $json.message.text }}"
+              "content": "=You are a plain-text accounting expert that converts bank/credit card transaction email notifications into Ledger CLI format entries.\n\nRULES:\n1. Date format: YYYY/MM/DD\n2. Currency: Always INR with ₹ symbol\n3. Amounts must have exactly 2 decimal places (e.g., ₹687.71)\n4. Use 4 spaces for indentation before account lines\n5. The second account line (source/payment account) should have NO amount - Ledger CLI infers it\n6. Each entry is separated by a blank line\n7. Payee/description goes on the same line as the date\n\nAVAILABLE EXPENSE ACCOUNTS (use the closest match, create a new sub-account ONLY if nothing fits):\nExpenses:Tea\nExpenses:Food\nExpenses:Food:Sweets\nExpenses:Food:IceCream\nExpenses:DiningOut\nExpenses:Groceries\nExpenses:Groceries:Milk\nExpenses:Groceries:Butter\nExpenses:Groceries:Vegetables\nExpenses:Groceries:Egg\nExpenses:Groceries:Curd\nExpenses:Groceries:Chapathi\nExpenses:Fruits\nExpenses:Meat:Chicken\nExpenses:Meat:Fish\nExpenses:Meat:Pork\nExpenses:Bar\nExpenses:Fuel\nExpenses:HairCut\nExpenses:Medical\nExpenses:Miscellaneous\nExpenses:Cloth\nExpenses:Entertainment:Movie\nExpenses:Amazon\nExpenses:Amazon:Gadgets:Headphone\nExpenses:Amazon:Gadgets:HardDisk\nExpenses:Amazon:Gadgets:UPS\nExpenses:Amazon:Gadgets:Watch\nExpenses:Amazon:Miscellaneous\nExpenses:Subscriptions:Youtube\nExpenses:Subscriptions:Spotify\nExpenses:Subscriptions:VPN\nExpenses:Subscriptions:Gym\nExpenses:Subscriptions:BitWarden\nExpenses:Subscriptions:NoBroker\nExpenses:Bills:Electricity\nExpenses:Bills:Internet\nExpenses:Bills:FastTag\nExpenses:Bills:Parking\nExpenses:Bills:Repair:Cycle\nExpenses:Bills:Repair:Laptop\nExpenses:Bills:Repair:Plumbing\nExpenses:Insurance:Car\nExpenses:Insurance:Life\nExpenses:Car:Painting\nExpenses:Car:Washing\nExpenses:SelfCare:Dress\nExpenses:SelfCare:Floss\nExpenses:Travel:Uber\nExpenses:Travel:Metro\nExpenses:Travel:TrainTicket\nExpenses:Travel:Benguluru:Stay\nExpenses:Travel:Benguluru:Food\nExpenses:Travel:Benguluru:Metro\nExpenses:Travel:Benguluru:Miscellaneous\nExpenses:Travel:Benguluru:Entertainment\nExpenses:Travel:Benguluru:Baggage\nExpenses:Donations:Marriage\nExpenses:Donations:Wikipedia\nExpenses:Applications:Passport\nExpenses:Family:HouseHolds\nExpenses:Family:HouseHolds:Fridge\nExpenses:Family:HouseHolds:Ikea\nExpenses:Family:AquaGuard\nExpenses:Celebration:NewYearEve\nExpenses:KSFE\n\nAVAILABLE PAYMENT SOURCE ACCOUNTS:\nLiabilities:Credit:SBICreditCard\nLiabilities:Credit:ICICICreditCard\nLiabilities:Credit:FederalBankCreditCard\nAssets:Banking:FederalBank\nAssets:Banking:ICICIBANK\nAssets:Banking:SBIFamilyAccount\nAssets:Banking:SBIPersonal\nAssets:AmazonPay\nAssets:Broker:Zerodha\n\nAVAILABLE INCOME ACCOUNTS:\nIncome:Salary:Nuventure\nIncome:Dividend:TataSteel\nIncome:BankTransfer:Anjali\nIncome:BankTransfer:Merin\nIncome:BankTransfer:Pappa\nIncome:Refund\nIncome:GooglePay\nIncome:CreditGiven\nIncome:PF:Nuventure\n\nOTHER ACCOUNTS:\nLiabilities:Loans:SBI:CarLoan\nCreditGiven:Varun\nCreditGiven:Joseph\nCreditGiven:Paul\nCreditGiven:AthulPaul\nCreditGiven:Nayana\nCreditGiven:Sugunan\nAssets:EPFO\n\nINSTRUCTIONS:\n- Identify the payment source from the email (which card or bank account was used)\n- Match the merchant/transaction to the best expense category\n- Extract the exact amount from the email\n- Extract the exact date from the email\n- If the email is NOT a transaction notification (e.g., marketing, OTP, statement summary, balance alert), output SKIP for that email\n- Output ONLY the ledger entries, nothing else. No explanations, no markdown, no code fences, no commentary.\n\nEXAMPLE OUTPUT:\n2026/03/01 Swiggy Food Order\n    Expenses:Food    ₹350.00\n    Liabilities:Credit:SBICreditCard\n\n2026/03/01 Shell Petrol Pump\n    Expenses:Fuel    ₹1500.00\n    Liabilities:Credit:ICICICreditCard\n\nHere are the transaction emails to process:\n\n{{ $json.data.map((item, i) =\u003E `--- EMAIL ${i+1} ---\\nFrom: ${item.from}\\nSubject: ${item.subject}\\nDate: ${item.date}\\nBody: ${item.cleanBody || item.snippet || ''}`).join('\\n\\n') }}\n"
             }
           ]
         },
         "jsonOutput": true,
-        "builtInTools": {},
+        "builtInTools": {
+
+        },
         "options": {
           "temperature": 0,
           "topP": 1
         }
       },
-      "id": "12568e1c-2f79-4df6-a306-0316b50be66f",
-      "name": "Gemini - Parse SMS",
       "type": "@n8n/n8n-nodes-langchain.googleGemini",
       "typeVersion": 1.1,
-      "position": [
-        -240,
-        80
-      ],
+      "position": [1024, 32],
+      "id": "58d68334-5647-4b38-89ec-f548b01bff9a",
+      "name": "Message a model",
+      "executeOnce": true,
       "credentials": {
         "googlePalmApi": {
           "id": "XLY008dIrieLWP8z",
@@ -40,218 +156,35 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\n\n// Get original Telegram data - try multiple ways\nlet chatId, originalText;\n\ntry {\n  const telegramData = $('Telegram Trigger').first().json;\n  chatId = telegramData?.message?.chat?.id || telegramData?.chat?.id;\n  originalText = telegramData?.message?.text || telegramData?.text;\n} catch(e) {\n  // Fallback: not available via reference\n}\n\n// If still no chatId, check if it was passed through\nif (!chatId) {\n  chatId = item?.message?.chat?.id || item?.chat?.id || '';\n}\nif (!originalText) {\n  originalText = item?.message?.text || item?.text || '';\n}\n\nlet text = '';\n\n// Extract text from Gemini response\nif (item?.content?.parts) {\n  text = item.content.parts.map(p => p.text || '').join('');\n} else if (item?.candidates) {\n  text = item.candidates\n    .map(c => c.content?.parts?.map(p => p.text || '').join('') || '')\n    .join('');\n} else if (item?.text) {\n  text = item.text;\n} else if (item?.output) {\n  text = item.output;\n} else {\n  text = JSON.stringify(item);\n}\n\n// Clean up the text\ntext = text.replace(/```json/g, '').replace(/```/g, '').trim();\n\n// Try to parse JSON\nlet parsed;\ntry {\n  const temp = JSON.parse(text);\n  if (Array.isArray(temp)) {\n    parsed = typeof temp[0] === 'string' ? JSON.parse(temp[0]) : temp[0];\n  } else {\n    parsed = temp;\n  }\n} catch(e) {\n  const jsonMatch = text.match(/\\{[\\s\\S]*?\\}/);\n  if (jsonMatch) {\n    try {\n      parsed = JSON.parse(jsonMatch[0]);\n    } catch(e2) {\n      return [{ json: { error: true, isTransaction: false, chatId, rawText: text } }];\n    }\n  } else {\n    return [{ json: { error: true, isTransaction: false, chatId, rawText: text } }];\n  }\n}\n\nif (!parsed || !parsed.is_transaction) {\n  return [{ json: { error: false, isTransaction: false, chatId } }];\n}\n\nconst ledgerEntry = `${parsed.date} ${parsed.payee}\\n    ${parsed.expense_account}    ₹${parsed.amount.toFixed(2)}\\n    ${parsed.source_account}`;\n\nreturn [{\n  json: {\n    error: false,\n    isTransaction: true,\n    chatId: chatId,\n    ledgerEntry: ledgerEntry,\n    date: parsed.date,\n    payee: parsed.payee,\n    amount: parsed.amount,\n    sourceAccount: parsed.source_account,\n    expenseAccount: parsed.expense_account,\n    originalSms: originalText\n  }\n}];"
+        "jsCode": "// Get the raw response from Gemini\nconst item = $input.first().json;\n\nlet text = '';\n\n// Try multiple possible response structures\nif (item?.content?.parts) {\n  text = item.content.parts.map(p =\u003E p.text || '').join('');\n} else if (item?.candidates) {\n  text = item.candidates\n    .map(c =\u003E c.content?.parts?.map(p =\u003E p.text || '').join('') || '')\n    .join('');\n} else if (item?.message?.content) {\n  text = item.message.content;\n} else if (item?.text) {\n  text = item.text;\n} else if (item?.output) {\n  text = item.output;\n} else {\n  text = JSON.stringify(item);\n}\n\n// FIX: Handle JSON arrays by joining all elements instead of taking just the first one\ntry {\n  const parsed = JSON.parse(text);\n  if (Array.isArray(parsed)) {\n    // Join all array elements with double newlines to separate transactions\n    text = parsed.filter(item =\u003E typeof item === 'string').join('\\n\\n');\n  } else if (typeof parsed === 'string') {\n    text = parsed;\n  }\n} catch (e) {\n  // Not JSON or parsing failed, use text as-is\n}\n\n// Clean up formatting\ntext = text.replace(/\\\\n/g, '\\n').trim();\n\nconst lines = text.split('\\n');\nconst filteredLines = lines.filter(line =\u003E line.trim() !== 'SKIP' && line.trim() !== '');\nconst ledgerContent = filteredLines.join('\\n').trim();\n\nif (!ledgerContent || ledgerContent === 'SKIP') {\n  return [{ json: { hasEntries: false, ledgerContent: '' } }];\n}\n\n// Count entries (each entry starts with a date pattern YYYY/MM/DD)\nconst entryCount = (ledgerContent.match(/^\\d{4}\\/\\d{2}\\/\\d{2}/gm) || []).length;\n\n// Get Email IDs from previous node\nconst aggregatedItems = $('Aggregate All Emails').first().json;\nconst emailIds = (aggregatedItems.data || []).map(item =\u003E item.id).filter(Boolean);\n\nreturn [{ \n  json: { \n    hasEntries: true, \n    ledgerContent: ledgerContent,\n    entryCount: entryCount,\n    generatedAt: new Date().toISOString(),\n    emailIds: emailIds\n  } \n}];"
       },
-      "id": "44e4b54e-401b-4df6-8d23-2bd71e1da8e1",
-      "name": "Build Ledger Entry",
+      "id": "127f0076-1eb8-4ce0-983b-ff456cf6c345",
+      "name": "Process Model Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        64,
-        80
-      ]
+      "position": [1312, 32]
     },
     {
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "is-transaction",
-              "leftValue": "={{ $json.isTransaction }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
+        "jsCode": "const emailIds = $('Create Ledger File').first().json.emailIds || [];\nreturn emailIds.map(id =\u003E ({ json: { messageId: id } }));"
       },
-      "id": "9d2818f1-71e5-422b-882a-49fc5caa3dc2",
-      "name": "Valid Transaction?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        240,
-        80
-      ]
-    },
-    {
-      "parameters": {
-        "chatId": "={{ $json.chatId }}",
-        "text": "==Parsed Ledger Entry:\n\n{{ $json.ledgerEntry }}\n\nAmount: ₹{{ $json.amount }}\nPayee: {{ $json.payee }}\nCategory: {{ $json.expenseAccount }}\nSource: {{ $json.sourceAccount }}",
-        "replyMarkup": "inlineKeyboard",
-        "inlineKeyboard": {
-          "rows": [
-            {
-              "row": {
-                "buttons": [
-                  {
-                    "text": "Approve",
-                    "additionalFields": {
-                      "callback_data": "approve"
-                    }
-                  },
-                  {
-                    "text": "Edit",
-                    "additionalFields": {
-                      "callback_data": "edit"
-                    }
-                  },
-                  {
-                    "text": "Reject",
-                    "additionalFields": {
-                      "callback_data": "reject"
-                    }
-                  }
-                ]
-              }
-            }
-          ]
-        },
-        "additionalFields": {
-          "parse_mode": "HTML"
-        }
-      },
-      "id": "ab36506f-fbff-458a-ac0f-e7f191a1c3b3",
-      "name": "Send for Confirmation",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [
-        480,
-        80
-      ],
-      "webhookId": "898eea60-510e-4ff4-b719-2aae32ed7aa9",
-      "credentials": {
-        "telegramApi": {
-          "id": "RuJvBXel69e2gzQS",
-          "name": "Telegram account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "chatId": "={{ $json.chatId }}",
-        "text": "⚠️ This doesn't look like a transaction SMS. Please send a valid bank transaction message.",
-        "additionalFields": {}
-      },
-      "id": "bed29d6f-178b-4cc9-ac7a-5e3d065d9dcc",
-      "name": "Not a Transaction",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [
-        496,
-        256
-      ],
-      "webhookId": "18610758-525b-4aa3-8096-52b4351bc5fa",
-      "credentials": {
-        "telegramApi": {
-          "id": "RuJvBXel69e2gzQS",
-          "name": "Telegram account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const input = $input.first().json;\nconst data = input.callback_query?.data || '';\nconst chatId = input.callback_query?.message?.chat?.id || '';\nconst messageId = input.callback_query?.message?.message_id || '';\n\n// Extract ledger entry from the bot's original message text\n// The entry is between \"Parsed Ledger Entry:\" and \"Amount:\"\nconst originalMsg = input.callback_query?.message?.text || '';\nlet ledgerEntry = '';\n\nconst entryMatch = originalMsg.match(/Parsed Ledger Entry:\\s*\\n([\\s\\S]*?)\\n\\nAmount:/);\nif (entryMatch) {\n  ledgerEntry = entryMatch[1].trim();\n}\n\nlet action = '';\nif (data === 'approve') {\n  action = 'approve';\n} else if (data === 'edit') {\n  action = 'edit';\n} else if (data === 'reject') {\n  action = 'reject';\n}\n\nreturn [{\n  json: {\n    action,\n    ledgerEntry,\n    chatId: String(chatId),\n    messageId\n  }\n}];"
-      },
-      "id": "8c5e2729-f818-4e08-a0ec-b510ebd02359",
-      "name": "Parse Button Action",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        -240,
-        560
-      ]
+      "position": [2048, 32],
+      "id": "37b5a282-5b6c-4ac8-9a61-549685d77911",
+      "name": "Split Email IDs"
     },
     {
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "is-approve",
-              "leftValue": "={{ $json.action }}",
-              "rightValue": "approve",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
+        "operation": "delete",
+        "messageId": "={{ $json.messageId }}"
       },
-      "id": "eeccc00b-fc4c-472e-89cc-0e8e04c01e74",
-      "name": "Is Approve?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        0,
-        560
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "is-reject",
-              "leftValue": "={{ $json.action }}",
-              "rightValue": "reject",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "b73d63bc-625e-4675-8b16-0c43b39fb568",
-      "name": "Is Reject?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        240,
-        720
-      ]
-    },
-    {
-      "parameters": {
-        "sendTo": "prinzpiuz@gmail.com",
-        "subject": "=Ledger Entry - {{ $now.format('yyyy-MM-dd HH:mm') }}",
-        "emailType": "text",
-        "message": "=Approved ledger entry from SMS:\n\n{{ $json.ledgerEntry }}\n\nAppend this to your main ledger file.",
-        "options": {}
-      },
-      "id": "6cc6f3ea-4fbd-4f65-9668-fc998085c2ce",
-      "name": "Email Ledger Entry",
       "type": "n8n-nodes-base.gmail",
-      "typeVersion": 2.1,
-      "position": [
-        480,
-        480
-      ],
-      "webhookId": "21ee70f5-5bf5-4b3b-95e3-07f78de0a1da",
+      "typeVersion": 2.2,
+      "position": [2240, 32],
+      "id": "dfb6dce8-50e8-4830-bbea-35d6d3cb98da",
+      "name": "Delete a message",
+      "webhookId": "d733a1fc-9780-4631-ba1f-cdd76f72492b",
       "credentials": {
         "gmailOAuth2": {
           "id": "sf1rbEtul9ySqeCu",
@@ -261,21 +194,18 @@
     },
     {
       "parameters": {
-        "chatId": "={{ $json.chatId }}",
-        "text": "=✅ Entry approved and saved!\n\n{{ $json.ledgerEntry }}",
+        "chatId": "-1002178003120",
+        "text": "No Transactions Detected/Found",
         "additionalFields": {
-          "parse_mode": "HTML"
+
         }
       },
-      "id": "53187af0-2053-4724-b6a5-59d7fbd9ae66",
-      "name": "Confirm Approved",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [
-        480,
-        640
-      ],
-      "webhookId": "db17b4f6-60ed-4cf6-af64-13e79cfdc74b",
+      "position": [1616, 304],
+      "id": "24cfeb64-066b-4023-8e4e-9eba9aaa7620",
+      "name": "Send a text message",
+      "webhookId": "ab8c99e9-fa65-4023-be39-097ab87e5c41",
       "credentials": {
         "telegramApi": {
           "id": "RuJvBXel69e2gzQS",
@@ -285,249 +215,189 @@
     },
     {
       "parameters": {
-        "chatId": "={{ $json.chatId }}",
-        "text": "❌ Entry discarded.",
-        "additionalFields": {}
-      },
-      "id": "ce122d21-1510-4118-9bbd-8cf3f7754b0d",
-      "name": "Confirm Rejected",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [
-        480,
-        800
-      ],
-      "webhookId": "89f8c620-9641-44d5-b416-d07676744a89",
-      "credentials": {
-        "telegramApi": {
-          "id": "RuJvBXel69e2gzQS",
-          "name": "Telegram account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "chatId": "={{ $json.chatId }}",
-        "text": "✏️ Please send the corrected ledger entry in this format:\n\n```\nYYYY/MM/DD Payee Name\n    Expenses:Category    ₹Amount\n    Payment:Source\n```\n\nOr send a new SMS to re-parse.",
-        "additionalFields": {
-          "parse_mode": "Markdown"
-        }
-      },
-      "id": "3e84cb86-59a5-4ea3-b950-767d43d8acc8",
-      "name": "Ask for Edit",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [
-        480,
-        960
-      ],
-      "webhookId": "ebbb6ca6-12d6-4ac4-9c93-0af6bc564267",
-      "credentials": {
-        "telegramApi": {
-          "id": "RuJvBXel69e2gzQS",
-          "name": "Telegram account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const input = $input.first().json;\n\nif (input.message) {\n  return [{ json: { ...input, routeType: 'message' } }];\n} else if (input.callback_query) {\n  return [{ json: { ...input, routeType: 'callback' } }];\n}\n\nreturn [{ json: { ...input, routeType: 'unknown' } }];"
+        "jsCode": "const items = $input.first().json.data || [];\n\nconst cleaned = items.map(item =\u003E {\n  let body = '';\n  \n  // If no plain text, extract from HTML\n  if (!body && item.html) {\n    let html = item.html;\n    \n    // Extract transaction text from SBI Card emails (brown highlight box)\n    const sbiMatch = html.match(/bgcolor=\"#a26d2b\"[^\u003E]*\u003E([\\s\\S]*?)\u003C\\/td\u003E/gi);\n    if (sbiMatch) {\n      body = sbiMatch.map(m =\u003E m.replace(/\u003C[^\u003E]*\u003E/g, ' ')).join('\\n');\n    }\n    \n    // Extract transaction text from ICICI emails\n    const iciciMatch = html.match(/transaction[^\u003C]*(?:rs\\.?|inr|₹)\\s*[\\d,]+\\.?\\d*/gi);\n    if (iciciMatch) {\n      body += '\\n' + iciciMatch.join('\\n');\n    }\n    \n    // Extract transaction text from Federal Bank emails\n    const fedMatch = html.match(/(?:debited|credited|spent)[^\u003C]*(?:rs\\.?|inr|₹)\\s*[\\d,]+\\.?\\d*/gi);\n    if (fedMatch) {\n      body += '\\n' + fedMatch.join('\\n');\n    }\n    \n    // If none of the specific patterns matched, do a general HTML cleanup\n    if (!body.trim()) {\n      body = html\n        .replace(/\u003Cstyle[^\u003E]*\u003E[\\s\\S]*?\u003C\\/style\u003E/gi, '')\n        .replace(/\u003Cscript[^\u003E]*\u003E[\\s\\S]*?\u003C\\/script\u003E/gi, '')\n        .replace(/\u003Cimg[^\u003E]*\u003E/gi, '')\n        .replace(/\u003C[^\u003E]*\u003E/g, ' ')\n        .replace(/&nbsp;/g, ' ')\n        .replace(/&amp;/g, '&')\n        .replace(/&lt;/g, '\u003C')\n        .replace(/&gt;/g, '\u003E')\n        .replace(/&#39;/g, \"'\")\n        .replace(/\\s+/g, ' ')\n        .trim();\n    }\n  }\n  \n  // Clean up whitespace\n  body = body.replace(/\\s+/g, ' ').trim();\n  \n  // Trim to 3000 chars per email to save tokens\n  body = body.substring(0, 3000);\n  \n  return { ...item, cleanBody: body };\n});\n\nreturn [{ json: { data: cleaned } }];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        -752,
-        304
-      ],
-      "id": "f96ecd00-faea-4052-a949-01957e55c739",
-      "name": "Route Input"
+      "position": [816, 32],
+      "id": "6e7d0d0f-720c-4320-8a59-976af66ebe9b",
+      "name": "Trim HTML"
     },
     {
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 3
-          },
-          "conditions": [
-            {
-              "id": "46c232ed-5260-4ea0-a7fa-1160fc21675e",
-              "leftValue": "={{ $json.routeType }}",
-              "rightValue": "message",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
+        "chatId": "-1002178003120",
+        "text": "={{ $json.ledgerContent }}",
+        "additionalFields": {
+
+        }
       },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        -576,
-        336
-      ],
-      "id": "385f5c01-62fc-41af-975a-7539a946eb7c",
-      "name": "If"
-    },
-    {
-      "parameters": {
-        "updates": [
-          "message",
-          "callback_query"
-        ],
-        "additionalFields": {}
-      },
-      "id": "218357a0-371e-4d19-a49e-bc534eb2b25c",
-      "name": "Telegram Trigger",
-      "type": "n8n-nodes-base.telegramTrigger",
-      "typeVersion": 1.1,
-      "position": [
-        -928,
-        304
-      ],
-      "webhookId": "sms-ledger-msg-trigger",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1616, -208],
+      "id": "bb0f9f35-be33-4727-b5ff-bc21ba123e88",
+      "name": "Send a text message1",
+      "webhookId": "1a88810e-b08d-4fd3-a390-3e068550233e",
       "credentials": {
         "telegramApi": {
           "id": "RuJvBXel69e2gzQS",
           "name": "Telegram account"
         }
       }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 12
+            }
+          ]
+        }
+      },
+      "id": "8f6d0c2d-3452-458e-9bdf-8c03d453af95",
+      "name": "Run Every 12 Hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [160, 32]
     }
   ],
-  "pinData": {},
+  "pinData": {
+
+  },
   "connections": {
-    "Gemini - Parse SMS": {
+    "Run Every 6 Hours": {
       "main": [
         [
           {
-            "node": "Build Ledger Entry",
+            "node": "Fetch Transaction Emails",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Build Ledger Entry": {
+    "Fetch Transaction Emails": {
       "main": [
         [
           {
-            "node": "Valid Transaction?",
+            "node": "Aggregate All Emails",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Valid Transaction?": {
+    "Aggregate All Emails": {
       "main": [
         [
           {
-            "node": "Send for Confirmation",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Not a Transaction",
+            "node": "Trim HTML",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Parse Button Action": {
+    "Has Entries?": {
       "main": [
         [
           {
-            "node": "Is Approve?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Is Approve?": {
-      "main": [
-        [
-          {
-            "node": "Email Ledger Entry",
+            "node": "Create Ledger File",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Confirm Approved",
+            "node": "Send a text message1",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Is Reject?",
+            "node": "Send a text message",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Is Reject?": {
+    "Create Ledger File": {
       "main": [
         [
           {
-            "node": "Confirm Rejected",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Ask for Edit",
+            "node": "Email Ledger File",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Route Input": {
+    "Email Ledger File": {
       "main": [
         [
           {
-            "node": "If",
+            "node": "Split Email IDs",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "If": {
+    "Message a model": {
       "main": [
         [
           {
-            "node": "Gemini - Parse SMS",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Parse Button Action",
+            "node": "Process Model Response",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Telegram Trigger": {
+    "Process Model Response": {
       "main": [
         [
           {
-            "node": "Route Input",
+            "node": "Has Entries?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Email IDs": {
+      "main": [
+        [
+          {
+            "node": "Delete a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete a message": {
+      "main": [
+        []
+      ]
+    },
+    "Trim HTML": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Every 12 Hour": {
+      "main": [
+        [
+          {
+            "node": "Fetch Transaction Emails",
             "type": "main",
             "index": 0
           }
@@ -538,22 +408,15 @@
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "39564a63-ca45-4f5c-a953-90e99b564477",
+  "versionId": "ee43e4a1-d315-45fc-9c08-ddf47e38964c",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "c7d71a75037c751f6f2f99666ea4c568df9222f4ce344d5668d5a76dbbd5f1e6"
   },
-  "id": "sQSUTFicnIRLXjto",
+  "id": "1XyeS7EUU8kc6ydD",
   "tags": [
-    {
-      "updatedAt": "2026-03-08T05:36:39.339Z",
-      "createdAt": "2026-03-08T05:36:39.339Z",
-      "id": "9BkKJuAviAnHAbTV",
-      "name": "telegram"
-    },
     {
       "updatedAt": "2026-02-28T11:50:50.966Z",
       "createdAt": "2026-02-28T11:50:50.966Z",

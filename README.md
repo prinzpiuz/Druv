@@ -143,6 +143,7 @@ Configure environment variables by copying and editing the env File as needed.
 | [BentoPDF](https://github.com/alam00000/bentopdf) | PDF Tools |  /configs |
 | [dawarich](https://dawarich.app/) | Timeline Tracker |  /configs |
 | [BloTils](https://github.com/prinzpiuz/BloTils) | Blog Utilities |  /configs |
+| [Wger](https://github.com/wger-project/wger) | Workout Tracker |  /configs |
 
 ---
 
