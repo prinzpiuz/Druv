@@ -32,7 +32,7 @@
         widget:
           type: gluetun
           url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8000
-    - Airtel Speed:
+    - Network Speed:
         icon: myspeed.png
         href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5217
         widget:

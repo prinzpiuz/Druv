@@ -196,7 +196,7 @@ services:
       gluetun:
         condition: service_healthy
   recyclarr:
-    image: ghcr.io/recyclarr/recyclarr:latest
+    image: ghcr.io/recyclarr/recyclarr:8
     container_name: recyclarr
     pull_policy: always
     user: 1000:1000

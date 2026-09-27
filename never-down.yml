@@ -45,6 +45,20 @@ services:
       - /configs/filebrowser/data:/home/filebrowser/data
     ports:
       - 8091:8091
+  couchdb:
+    image: couchdb:3.5
+    container_name: livesync-couchdb
+    restart: unless-stopped
+    environment:
+      - COUCHDB_USER=${COUCHDB_USER}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD}
+    volumes:
+      - /data/couchdb:/opt/couchdb/data
+      # local.d is additive. Do NOT mount over /opt/couchdb/etc/local.ini:
+      # CouchDB writes runtime config there and a read-only mount breaks it.
+      - ./10-livesync.ini:/opt/couchdb/etc/local.d/10-livesync.ini:ro
+    ports:
+      - 5984:5984
 networks:
   homelab:
     name: ${NETWORK_NAME}
