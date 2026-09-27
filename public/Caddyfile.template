@@ -1,66 +1,103 @@
+# ---------------------------------------------------------------------------
+# Snippets must come before any site block.
+#
+# envsubst note: it substitutes $VAR and ${VAR}. Caddy's {args[0]} and
+# {err.status_code} contain no $, so they pass through untouched. Never use
+# Caddy's {$ENV} form in this template — envsubst would consume it.
+# ---------------------------------------------------------------------------
+
+(secure) {
+	header {
+		# Caddy's own banner on responses it generates (errors, redirects)
+		-Server
+		-X-Powered-By
+
+		X-Content-Type-Options nosniff
+		X-Frame-Options SAMEORIGIN
+		Referrer-Policy strict-origin-when-cross-origin
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+
+	# Bare status code instead of a branded error page. Without this, a 502
+	# announces the proxy software to anyone who probes a down service.
+	handle_errors {
+		respond "{err.status_code}"
+	}
+}
+
+(proxy) {
+	import secure
+
+	reverse_proxy {args[0]} {
+		# Banners the upstream application sends back. The -Server here is
+		# separate from the one in (secure): that covers Caddy's own
+		# responses, this covers pass-through responses.
+		header_down -Server
+		header_down -X-Powered-By
+		header_down -X-AspNet-Version
+		header_down -X-AspNetMvc-Version
+		header_down -X-Runtime
+		header_down -X-Generator
+		header_down -X-Drupal-Cache
+		header_down -X-Application-Context
+	}
+
+	tls {
+		dns cloudflare ${CLOUDFLARE_API_TOKEN}
+	}
+}
+
+# ---------------------------------------------------------------------------
+# Sites
+# ---------------------------------------------------------------------------
+
 blotils.prinzpiuz.in {
-    reverse_proxy ${REVERSE_PROXY_URL}:8087
-    header {
-        X-Content-Type-Options nosniff
-        X-Frame-Options SAMEORIGIN
-        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-    }
-    tls {
-        dns cloudflare ${CLOUDFLARE_API_TOKEN}
-    }
+	import proxy ${REVERSE_PROXY_URL}:8087
 }
 
 jellyfin.prinzpiuz.in {
-    reverse_proxy ${REVERSE_PROXY_URL}:8096
-    tls {
-        dns cloudflare ${CLOUDFLARE_API_TOKEN}
-    }
+	import proxy ${REVERSE_PROXY_URL}:8096
 }
 
 timeline.prinzpiuz.in {
-    reverse_proxy ${REVERSE_PROXY_URL}:8086
-    tls {
-        dns cloudflare ${CLOUDFLARE_API_TOKEN}
-    }
+	import proxy ${REVERSE_PROXY_URL}:8086
 }
 
 pdftools.prinzpiuz.in {
-    reverse_proxy ${REVERSE_PROXY_URL}:8085
-    tls {
-        dns cloudflare ${CLOUDFLARE_API_TOKEN}
-    }
-}
-
-livesync.prinzpiuz.in {
-    reverse_proxy ${REVERSE_PROXY_URL}:5984
-    tls {
-        dns cloudflare ${CLOUDFLARE_API_TOKEN}
-    }
+	import proxy ${REVERSE_PROXY_URL}:8085
 }
 
 workflows.prinzpiuz.in {
-    reverse_proxy ${REVERSE_PROXY_URL}:5678
-    tls {
-        dns cloudflare ${CLOUDFLARE_API_TOKEN}
-    }
+	import proxy ${REVERSE_PROXY_URL}:5678
 }
 
-fitness.prinzpiuz.in {
-    handle /static/* {
-        reverse_proxy ${REVERSE_PROXY_URL}:8003
-    }
-    handle /media/* {
-        reverse_proxy ${REVERSE_PROXY_URL}:8003
-    }
-    handle {
-        reverse_proxy ${REVERSE_PROXY_URL}:8002
-    }
-    header {
-        X-Content-Type-Options nosniff
-        X-Frame-Options SAMEORIGIN
-        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-    }
-    tls {
-        dns cloudflare ${CLOUDFLARE_API_TOKEN}
-    }
+# CouchDB for Obsidian LiveSync. Publicly exposed, so it gets extra treatment:
+# the admin surfaces are blocked outright and CouchDB's own headers stripped.
+# Reach Fauxton over Tailscale instead:
+#   http://100.83.118.50:5984/_utils
+livesync.prinzpiuz.in {
+	@admin path /_utils* /_membership* /_cluster_setup* /_node/* /_all_dbs /_active_tasks /_scheduler*
+	respond @admin 404
+
+	header {
+		-Server
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy no-referrer
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+
+	handle_errors {
+		respond "{err.status_code}"
+	}
+
+	reverse_proxy ${REVERSE_PROXY_URL}:5984 {
+		header_down -Server
+		header_down -X-CouchDB-Body-Time
+		header_down -X-Couch-Request-ID
+	}
+
+	tls {
+		dns cloudflare ${CLOUDFLARE_API_TOKEN}
+	}
 }
