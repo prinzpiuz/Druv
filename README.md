@@ -160,6 +160,7 @@ Configure environment variables by copying and editing the env File as needed.
 | [Uptime-Kuma](https://uptimekuma.org/) | Uptime Monitor | /configs |
 | [Beszel](https://beszel.dev/) | System Monitoring | /configs |
 | [Quantum File Browser](https://filebrowserquantum.com/) | File Browser | /configs |
+| [Couch DB](https://couchdb.apache.org/) for [LiveSync](https://github.com/vrtmrz/obsidian-livesync) | Obsidian Plugin | /configs |
 
 ### Debug
 
