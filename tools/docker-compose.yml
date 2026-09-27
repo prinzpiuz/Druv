@@ -2,7 +2,7 @@ name: Tools
 include:
   - path: ./dawarich/docker-compose.yml
   - path: ./blotils/docker-compose.yml
-  - path: ./wger/docker-compose.yml
+  - path: ./priceStalker/docker-compose.yml
 services:
   qdrant:
     image: qdrant/qdrant:latest
@@ -20,3 +20,28 @@ services:
     pull_policy: always
     ports:
       - 8085:8080
+  SnapOtter:
+    image: snapotter/snapotter:latest
+    container_name: snapotter
+    pull_policy: always
+    restart: unless-stopped
+    ports:
+      - 1349:1349
+    volumes:
+      - /data/snapotter:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1349/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+    shm_size: "2gb" # Needed for Python ML shared memory
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      - AUTH_ENABLED=true
+      - DEFAULT_USERNAME=${SNAPOTTER_USERNAME}
+      - DEFAULT_PASSWORD=${SNAPOTTER_PASSWORD}

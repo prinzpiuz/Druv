@@ -1,0 +1,54 @@
+name: pricestalker
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pricestalker-db
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_USER: ${PRICESTALKER_POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${PRICESTALKER_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${PRICESTALKER_POSTGRES_DB:-pricestalker}
+    volumes:
+      - /data/pricestalker/postgres:/var/lib/postgresql/data
+      - ./migrations.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - ${NETWORK_NAME}
+  backend:
+    image: ghcr.io/mikeknight85/pricestalker-backend:latest
+    container_name: pricestalker-backend
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:${PRICESTALKER_POSTGRES_PASSWORD}@postgres:5432/pricestalker}
+      JWT_SECRET: ${PRICESTALKER_JWT_SECRET}
+      PORT: 3001
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ${NETWORK_NAME}
+  frontend:
+    image: ghcr.io/mikeknight85/pricestalker-frontend:latest
+    container_name: pricestalker-frontend
+    env_file:
+      - ../.env
+    ports:
+      - "${FRONTEND_PORT:-8088}:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - ${NETWORK_NAME}
+networks:
+  default:
+    name: ${NETWORK_NAME}
+    external: true

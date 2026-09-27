@@ -50,16 +50,23 @@ services:
       - LOCK_JELLYFIN_URL=true
     ports:
       - 8100:80
-  jellyseerr:
-    image: fallenbagel/jellyseerr:latest
-    container_name: jellyseerr
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    init: true
+    container_name: seerr
     pull_policy: always
     user: 1000:1000
     environment:
       - LOG_LEVEL=debug
       - TZ=Asia/Kolkata
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/settings/public || exit 1
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+      retries: 3
     volumes:
-      - /configs/jellyseerr:/app/config
+      - /configs/seerr:/app/config
     restart: always
     network_mode: service:gluetun
     env_file:

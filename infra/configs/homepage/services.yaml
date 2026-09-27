@@ -117,12 +117,12 @@
         server: druv-docker
         container: jellyfin-music
 - ARR:
-    - Jellyseerr:
+    - seerr:
         icon: jellyseerr.png
         href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5055
         ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5055
         server: druv-docker
-        container: jellyseerr
+        container: seerr
         widget:
           type: jellyseerr
           url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5055
@@ -231,9 +231,15 @@
         ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5678
         server: druv-docker
         container: n8n
-    - wger:
-        icon: https://raw.githubusercontent.com/wger-project/wger/master/wger/core/static/images/logos/logo.png
-        href: https://fitness.prinzpiuz.in
-        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8002
+    - PriceStalker:
+        icon: https://raw.githubusercontent.com/mikeknight85/PriceStalker/main/assets/header.svg
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8088
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8088
         server: druv-docker
-        container: wger_web
+        container: pricestalker-frontend
+    - SnapOtter:
+        icon: https://raw.githubusercontent.com/snapotter-hq/SnapOtter/refs/heads/main/branding/logo-512-on-dark.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:1349
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:1349
+        server: druv-docker
+        container: snapotter
