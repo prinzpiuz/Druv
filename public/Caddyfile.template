@@ -71,10 +71,7 @@ workflows.prinzpiuz.in {
 	import proxy ${REVERSE_PROXY_URL}:5678
 }
 
-# CouchDB for Obsidian LiveSync. Publicly exposed, so it gets extra treatment:
-# the admin surfaces are blocked outright and CouchDB's own headers stripped.
-# Reach Fauxton over Tailscale instead:
-#   http://100.83.118.50:5984/_utils
+# CouchDB for Obsidian LiveSync.
 livesync.prinzpiuz.in {
 	@admin path /_utils* /_membership* /_cluster_setup* /_node/* /_all_dbs /_active_tasks /_scheduler*
 	respond @admin 404

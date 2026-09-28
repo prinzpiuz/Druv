@@ -1,0 +1,25 @@
+name: Caddy
+on:
+  push:
+    paths:
+      - "public/Caddyfile.template"
+      - ".github/workflows/caddy.yml"
+  pull_request:
+    paths:
+      - "public/Caddyfile.template"
+jobs:
+  validate:
+    name: Validate Caddyfile
+    runs-on: ubuntu-latest
+    container:
+      image: caddybuilds/caddy-cloudflare:alpine
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render template
+        run: |
+          apk add --no-cache gettext
+          export REVERSE_PROXY_URL="127.0.0.1"
+          export CLOUDFLARE_API_TOKEN="abcdefghijklmnopqrstuvwxyz0123456789abcd"
+          envsubst < public/Caddyfile.template > /tmp/Caddyfile
+      - name: Validate
+        run: caddy validate --adapter caddyfile --config /tmp/Caddyfile
