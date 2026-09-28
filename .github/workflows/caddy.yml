@@ -19,7 +19,7 @@ jobs:
         run: |
           apk add --no-cache gettext
           export REVERSE_PROXY_URL="127.0.0.1"
-          export CLOUDFLARE_API_TOKEN="dummy-token-for-validation"
+          export CLOUDFLARE_API_TOKEN="abcdefghijklmnopqrstuvwxyz0123456789abcd"
           envsubst < public/Caddyfile.template > /tmp/Caddyfile
       - name: Validate
         run: caddy validate --adapter caddyfile --config /tmp/Caddyfile
