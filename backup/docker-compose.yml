@@ -1,7 +1,7 @@
 name: Backup Services
 services:
   backrest:
-    image: garethgeorge/backrest:latest
+    image: garethgeorge/backrest:${BACKREST_VERSION:?set in version.env}
     container_name: backrest
     hostname: backrest
     network_mode: host

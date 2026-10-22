@@ -5,25 +5,22 @@ include:
   - path: ./priceStalker/docker-compose.yml
 services:
   qdrant:
-    image: qdrant/qdrant:latest
+    image: qdrant/qdrant:${QDRANT_VERSION:?set in version.env}
     container_name: qdrant
     restart: unless-stopped
-    pull_policy: always
     ports:
       - 6333:6333
     volumes:
       - /data/qdrant_storage:/qdrant/storage:z
   bentopdf:
-    image: ghcr.io/alam00000/bentopdf-simple:latest
+    image: ghcr.io/alam00000/bentopdf-simple:${BENTOPDF_VERSION:?set in version.env}
     container_name: bentopdf
     restart: unless-stopped
-    pull_policy: always
     ports:
       - 8085:8080
   SnapOtter:
-    image: snapotter/snapotter:latest
+    image: snapotter/snapotter:${SNAPOTTER_VERSION:?set in version.env}
     container_name: snapotter
-    pull_policy: always
     restart: unless-stopped
     ports:
       - 1349:1349

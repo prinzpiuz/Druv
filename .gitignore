@@ -1,4 +1,6 @@
 *.env
+# version.env holds pinned image tags, not secrets, so it is tracked
+!version.env
 mybb/
 mariadb/
 postgres/

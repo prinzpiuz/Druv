@@ -1,6 +1,6 @@
 services:
   dawarich_redis:
-    image: redis:7.4-alpine
+    image: redis:${DAWARICH_REDIS_VERSION:?set in version.env}
     container_name: dawarich_redis
     command: redis-server
     env_file:
@@ -17,7 +17,7 @@ services:
       start_period: 30s
       timeout: 10s
   dawarich_db:
-    image: postgis/postgis:17-3.5-alpine
+    image: postgis/postgis:${DAWARICH_POSTGIS_VERSION:?set in version.env}
     shm_size: 1G
     container_name: dawarich_db
     env_file:
@@ -39,7 +39,7 @@ services:
       start_period: 30s
       timeout: 10s
   dawarich_app:
-    image: freikin/dawarich:latest
+    image: freikin/dawarich:${DAWARICH_VERSION:?set in version.env}
     container_name: dawarich_app
     env_file:
       - ../.env
@@ -99,7 +99,7 @@ services:
           cpus: ${APP_CPU_LIMIT:-0.50}
           memory: ${APP_MEMORY_LIMIT:-4G}
   dawarich_sidekiq:
-    image: freikin/dawarich:latest
+    image: freikin/dawarich:${DAWARICH_VERSION:?set in version.env}
     container_name: dawarich_sidekiq
     env_file:
       - ../.env

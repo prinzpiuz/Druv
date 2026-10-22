@@ -2,8 +2,12 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
+      # The couchdb container chowns its local.d mount to uid 5984, so these
+      # hooks cannot open 10-livesync.ini for writing.
       - id: trailing-whitespace
+        exclude: ^10-livesync\.ini$
       - id: end-of-file-fixer
+        exclude: ^10-livesync\.ini$
       - id: check-merge-conflict
       - id: detect-private-key
       - id: check-added-large-files

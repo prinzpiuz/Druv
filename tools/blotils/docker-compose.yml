@@ -1,9 +1,8 @@
 services:
   blotils:
-    image: ghcr.io/prinzpiuz/blotils:latest
+    image: ghcr.io/prinzpiuz/blotils:${BLOTILS_VERSION:?set in version.env}
     container_name: blotils
     restart: unless-stopped
-    pull_policy: always
     networks:
       - ${NETWORK_NAME}
     ports:

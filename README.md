@@ -19,6 +19,37 @@
 
     `./down_and_up.sh`
 
+### Image Versions
+
+Every image is pinned to an exact tag. The tags live in [version.env](version.env) for the homelab stacks and in [public/version.env](public/version.env) for the public stack. Compose files reference them, for example:
+
+```yaml
+image: ghcr.io/hotio/radarr:${RADARR_VERSION:?set in version.env}
+```
+
+Unlike `.env`, these files are committed, because they hold versions and not secrets.
+
+Compose does not read `version.env` by itself. It auto-loads only `.env` from the project directory, so the version file has to be passed in:
+
+```bash
+export COMPOSE_ENV_FILES=.env,version.env   # then any docker compose command works
+docker compose config                       # check the rendered tags
+```
+
+`down_and_up.sh` exports this for you, and the deploy workflow does the same on the VPS before `docker compose pull`. Set it in your shell for manual compose commands. Two notes:
+
+* A `--env-file` flag overrides `COMPOSE_ENV_FILES`, so do not mix them.
+* `COMPOSE_ENV_FILES` has to come from the shell. Writing it inside `.env` does nothing.
+
+If a version variable is missing, compose stops with an error such as `required variable RADARR_VERSION is missing a value` instead of starting an unpinned container.
+
+To upgrade a service:
+
+1. Change its value in `version.env`.
+2. Run `docker compose up -d <service>`, or `./down_and_up.sh` for everything.
+
+The new tag is not in the local image store, so compose pulls it. No `pull_policy: always` is needed, and the compose files do not set it: with fixed tags that setting only adds a registry round trip per image on every restart.
+
 ### Using the Same Server Setup
 
 If you want to set up your server environment to match this repo exactly

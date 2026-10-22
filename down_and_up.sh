@@ -32,6 +32,14 @@ setup_environment() {
     fi
     success_log "Switched to directory: $COMPOSE_DIR"
     success_log "Environment variables loaded from .env file."
+    if [ ! -f "$COMPOSE_DIR/version.env" ]; then
+        error_log "Error: version.env not found in $COMPOSE_DIR (holds pinned image tags)" >&2
+        exit 1
+    fi
+    # Compose reads .env automatically but not version.env; this covers both for
+    # every compose call below. Do not add --env-file, it overrides this.
+    export COMPOSE_ENV_FILES=".env,version.env"
+    success_log "Image versions loaded from version.env."
     if [ -x "./logo.sh" ]; then
         ./logo.sh
     else
@@ -82,10 +90,10 @@ docker_kill() {
 docker_up() {
     success_log "Starting Docker Compose services with rebuild and force-recreate..."
 
-    if ! docker compose --env-file ./.env up -d --remove-orphans --build --force-recreate; then
+    if ! docker compose up -d --remove-orphans --build --force-recreate; then
         warning_log "Failed to start services" >&2
         docker_kill
-        if ! docker compose --env-file ./.env up  -d --remove-orphans --build --force-recreate; then
+        if ! docker compose up  -d --remove-orphans --build --force-recreate; then
             error_log "Retry failed: Could not start services" >&2
             exit 1
         fi
@@ -106,13 +114,13 @@ check_config() {
 no_down_restart() {
     success_log "Stoping & Re-Starting Never Down, Always Up Routine..."
     success_log "$(date): Stoping service management routine."
-    if ! docker compose --file never-down.yml --env-file ./.env down; then
+    if ! docker compose --file never-down.yml down; then
         error_log "Failed Stopping Never Down Services" >&2
         exit 1
     fi
     success_log "Stopped All Never Down Services Successfully."
     success_log "$(date): Starting service management routine."
-    if ! docker compose --file never-down.yml --env-file ./.env up  -d --remove-orphans --build --force-recreate; then
+    if ! docker compose --file never-down.yml up  -d --remove-orphans --build --force-recreate; then
         error_log "Failed Starting Never Down Services" >&2
         exit 1
     fi
