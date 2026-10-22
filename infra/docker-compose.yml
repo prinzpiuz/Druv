@@ -1,9 +1,8 @@
 name: Infra Services
 services:
   dockerproxy:
-    image: ghcr.io/tecnativa/docker-socket-proxy:latest
+    image: ghcr.io/tecnativa/docker-socket-proxy:${DOCKER_SOCKET_PROXY_VERSION:?set in version.env}
     container_name: dockerproxy
-    pull_policy: always
     environment:
       - CONTAINERS=1
       - SERVICES=1
@@ -19,9 +18,8 @@ services:
     networks:
       - ${NETWORK_NAME}
   homepage:
-    image: ghcr.io/gethomepage/homepage:latest
+    image: ghcr.io/gethomepage/homepage:${HOMEPAGE_VERSION:?set in version.env}
     container_name: homepage
-    pull_policy: always
     environment:
       PUID: 1000
       PGID: 1000
@@ -52,9 +50,8 @@ services:
     networks:
       - ${NETWORK_NAME}
   myspeed:
-    image: germannewsmaker/myspeed
+    image: germannewsmaker/myspeed:${MYSPEED_VERSION:?set in version.env}
     container_name: mySpeed
-    pull_policy: always
     volumes:
       - /configs/myspeed:/myspeed/data
     restart: always
@@ -65,9 +62,8 @@ services:
       gluetun:
         condition: service_healthy
   myspeed_no_vpn:
-    image: germannewsmaker/myspeed
+    image: germannewsmaker/myspeed:${MYSPEED_VERSION:?set in version.env}
     container_name: mySpeedNoVPN
-    pull_policy: always
     volumes:
       - /configs/myspeed_no_vpn:/myspeed/data
     restart: always
@@ -77,10 +73,9 @@ services:
     env_file:
       - .env
   beszel-agent:
-    image: henrygd/beszel-agent:alpine
+    image: henrygd/beszel-agent:${BESZEL_AGENT_VERSION:?set in version.env}
     container_name: beszel-homelab-agent
     restart: unless-stopped
-    pull_policy: always
     network_mode: host
     volumes:
       - /configs/beszel_agent_data:/var/lib/beszel-agent

@@ -1,9 +1,8 @@
 name: arr Services
 services:
   gluetun:
-    image: qmcgaw/gluetun:latest
+    image: qmcgaw/gluetun:${GLUETUN_VERSION:?set in version.env}
     container_name: gluetun
-    pull_policy: always
     privileged: true
     cap_add:
       - NET_ADMIN
@@ -11,6 +10,15 @@ services:
       - /dev/net/tun:/dev/net/tun
     volumes:
       - /configs/gluetun:/gluetun
+    # The image allows only ~25s (10s grace, 5s interval, 3 retries) to bring up
+    # the tunnel, resolve DNS through it and dial cloudflare.com:443. A slow
+    # handshake marked gluetun unhealthy and aborted every dependent service.
+    # Only the timings are overridden; the image's own test command is kept.
+    healthcheck:
+      start_period: 120s
+      interval: 10s
+      timeout: 10s
+      retries: 6
     environment:
       - TZ=${TZ}
       - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
@@ -39,9 +47,8 @@ services:
         ipv4_address: ${GLUETUN_IPV4_ADDR}
   #TODO implement search plugins
   qbittorrent:
-    image: ghcr.io/hotio/qbittorrent:release-5.0.4
+    image: ghcr.io/hotio/qbittorrent:${QBITTORRENT_VERSION:?set in version.env}
     container_name: qbittorrent
-    pull_policy: always
     restart: always
     environment:
       - PUID=1000
@@ -66,9 +73,8 @@ services:
       gluetun:
         condition: service_healthy
   radarr:
-    image: ghcr.io/hotio/radarr:latest
+    image: ghcr.io/hotio/radarr:${RADARR_VERSION:?set in version.env}
     container_name: radarr
-    pull_policy: always
     restart: unless-stopped
     logging:
       driver: json-file
@@ -90,9 +96,8 @@ services:
       default:
         ipv4_address: ${RADARR_IPV4_ADDR}
   sonarr:
-    image: ghcr.io/hotio/sonarr:latest
+    image: ghcr.io/hotio/sonarr:${SONARR_VERSION:?set in version.env}
     container_name: sonarr
-    pull_policy: always
     restart: unless-stopped
     logging:
       driver: json-file
@@ -114,10 +119,9 @@ services:
       default:
         ipv4_address: ${SONARR_IPV4_ADDR}
   synthwave:
-    image: ghcr.io/pranavverma-droid/synthwave:latest
+    image: ghcr.io/pranavverma-droid/synthwave:${SYNTHWAVE_VERSION:?set in version.env}
     container_name: synthwave
     restart: unless-stopped
-    pull_policy: always
     ports:
       - 5000:5000
     volumes:
@@ -129,10 +133,9 @@ services:
       - TZ=${TZ}
       - FLASK_ENV=production
   swurApp:
-    image: owlcaribou/swurapp
+    image: owlcaribou/swurapp@${SWURAPP_DIGEST:?set in version.env}
     container_name: sonarrWatchUntilRelease
     restart: unless-stopped
-    pull_policy: always
     env_file:
       - .env
     environment:
@@ -141,9 +144,8 @@ services:
       - DELAY_IN_MINUTES=60
       - IGNORE_TAG_NAME=ignore
   flaresolverr:
-    image: ghcr.io/flaresolverr/flaresolverr:latest
+    image: ghcr.io/flaresolverr/flaresolverr:${FLARESOLVERR_VERSION:?set in version.env}
     container_name: flaresolverr
-    pull_policy: always
     environment:
       - LOG_LEVEL=info
       - LOG_HTML=false
@@ -159,9 +161,8 @@ services:
       default:
         ipv4_address: ${FLARESOLVERR_IPV4_ADDR}
   prowlarr:
-    image: lscr.io/linuxserver/prowlarr:latest
+    image: lscr.io/linuxserver/prowlarr:${PROWLARR_VERSION:?set in version.env}
     container_name: prowlarr
-    pull_policy: always
     environment:
       - PUID=1000
       - PGID=1000
@@ -178,7 +179,7 @@ services:
       gluetun:
         condition: service_healthy
   jackett:
-    image: lscr.io/linuxserver/jackett:latest
+    image: lscr.io/linuxserver/jackett:${JACKETT_VERSION:?set in version.env}
     container_name: jackett
     environment:
       - PUID=1000
@@ -196,9 +197,8 @@ services:
       gluetun:
         condition: service_healthy
   recyclarr:
-    image: ghcr.io/recyclarr/recyclarr:8
+    image: ghcr.io/recyclarr/recyclarr:${RECYCLARR_VERSION:?set in version.env}
     container_name: recyclarr
-    pull_policy: always
     user: 1000:1000
     volumes:
       - /configs/recyclarr:/config
@@ -211,9 +211,8 @@ services:
     networks:
       - ${NETWORK_NAME}
   bazarr:
-    image: ghcr.io/hotio/bazarr:latest
+    image: ghcr.io/hotio/bazarr:${BAZARR_VERSION:?set in version.env}
     container_name: bazarr
-    pull_policy: always
     restart: always
     logging:
       driver: json-file
@@ -236,9 +235,8 @@ services:
       default:
         ipv4_address: ${BAZARR_IPV4_ADDR}
   unpackerr:
-    image: golift/unpackerr
+    image: golift/unpackerr:${UNPACKERR_VERSION:?set in version.env}
     container_name: unpackerr
-    pull_policy: always
     volumes:
       - /data:/downloads
     restart: always

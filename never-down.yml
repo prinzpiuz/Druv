@@ -1,9 +1,8 @@
 services:
   uptime-kuma:
-    image: louislam/uptime-kuma:2
+    image: louislam/uptime-kuma:${UPTIME_KUMA_VERSION:?set in version.env}
     container_name: uptime-kuma
     restart: unless-stopped
-    pull_policy: always
     env_file:
       - .env
     volumes:
@@ -12,10 +11,9 @@ services:
     ports:
       - 3001:3001
   beszel:
-    image: henrygd/beszel:latest
+    image: henrygd/beszel:${BESZEL_VERSION:?set in version.env}
     container_name: beszel
     restart: unless-stopped
-    pull_policy: always
     env_file:
       - .env
     environment:
@@ -28,9 +26,8 @@ services:
       - /configs/beszel_server_data/beszel_data:/beszel_data
       - /configs/beszel_server_data/beszel_socket:/beszel_socket
   filebrowser:
-    image: gtstef/filebrowser:latest
+    image: gtstef/filebrowser:${FILEBROWSER_VERSION:?set in version.env}
     container_name: filebrowser
-    pull_policy: always
     env_file:
       - .env
     restart: unless-stopped
@@ -46,7 +43,7 @@ services:
     ports:
       - 8091:8091
   couchdb:
-    image: couchdb:3.5.2.1
+    image: couchdb:${COUCHDB_VERSION:?set in version.env}
     container_name: livesync-couchdb
     restart: unless-stopped
     env_file:

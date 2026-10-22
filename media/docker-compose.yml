@@ -1,9 +1,8 @@
 name: Media Server
 services:
   audiobookshelf:
-    image: ghcr.io/advplyr/audiobookshelf:latest
+    image: ghcr.io/advplyr/audiobookshelf:${AUDIOBOOKSHELF_VERSION:?set in version.env}
     container_name: audiobookshelf
-    pull_policy: always
     restart: unless-stopped
     ports:
       - 8585:80
@@ -17,9 +16,8 @@ services:
     env_file:
       - .env
   jellyfin:
-    image: jellyfin/jellyfin
+    image: jellyfin/jellyfin:${JELLYFIN_VERSION:?set in version.env}
     container_name: jellyfin
-    pull_policy: always
     environment:
       - UID=1000
       - GID=1000
@@ -38,9 +36,8 @@ services:
       default:
         ipv4_address: ${JELLYFIN_IPV4_ADDR}
   jelly-music-app:
-    image: ghcr.io/stannnnn/jelly-music-app:latest
+    image: ghcr.io/stannnnn/jelly-music-app:${JELLY_MUSIC_APP_VERSION:?set in version.env}
     container_name: jellyfin-music
-    pull_policy: always
     restart: unless-stopped
     env_file:
       - .env
@@ -51,10 +48,9 @@ services:
     ports:
       - 8100:80
   seerr:
-    image: ghcr.io/seerr-team/seerr:latest
+    image: ghcr.io/seerr-team/seerr:${SEERR_VERSION:?set in version.env}
     init: true
     container_name: seerr
-    pull_policy: always
     user: 1000:1000
     environment:
       - LOG_LEVEL=debug

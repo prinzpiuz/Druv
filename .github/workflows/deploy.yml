@@ -30,6 +30,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           cd ~/Druv/
+          export COMPOSE_ENV_FILES=.env,version.env
           docker compose pull
           docker compose up -d --remove-orphans
           EOF

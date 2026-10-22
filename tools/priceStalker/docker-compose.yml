@@ -1,7 +1,7 @@
 name: pricestalker
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:${PRICESTALKER_POSTGRES_VERSION:?set in version.env}
     container_name: pricestalker-db
     env_file:
       - ../.env
@@ -21,7 +21,7 @@ services:
     networks:
       - ${NETWORK_NAME}
   backend:
-    image: ghcr.io/mikeknight85/pricestalker-backend:latest
+    image: ghcr.io/mikeknight85/pricestalker-backend:${PRICESTALKER_BACKEND_VERSION:?set in version.env}
     container_name: pricestalker-backend
     env_file:
       - ../.env
@@ -37,7 +37,7 @@ services:
     networks:
       - ${NETWORK_NAME}
   frontend:
-    image: ghcr.io/mikeknight85/pricestalker-frontend:latest
+    image: ghcr.io/mikeknight85/pricestalker-frontend:${PRICESTALKER_FRONTEND_VERSION:?set in version.env}
     container_name: pricestalker-frontend
     env_file:
       - ../.env

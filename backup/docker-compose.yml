@@ -1,7 +1,7 @@
 name: Backup Services
 services:
   backrest:
-    image: garethgeorge/backrest:latest
+    image: garethgeorge/backrest:${BACKREST_VERSION:?set in version.env}
     container_name: backrest
     hostname: backrest
     network_mode: host
@@ -17,6 +17,4 @@ services:
       - XDG_CACHE_HOME=/cache
       - TMPDIR=/tmp
       - TZ=Asia/Kolkata
-    ports:
-      - 9898:9898
     restart: unless-stopped
