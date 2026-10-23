@@ -16,3 +16,13 @@ repos:
     rev: v0.20.0
     hooks:
       - id: yamlfmt
+  - repo: local
+    hooks:
+      # Renders all three compose projects. Needs Docker. Missing .env files
+      # are created from .env.sample, so CI works without secrets.
+      - id: validate-compose
+        name: docker compose config (all stacks)
+        entry: ./scripts/validate-compose.sh
+        language: script
+        pass_filenames: false
+        always_run: true
