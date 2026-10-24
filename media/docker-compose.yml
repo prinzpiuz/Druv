@@ -24,6 +24,9 @@ services:
       - TZ=Asia/Kolkata
     volumes:
       - /configs/jellyfin:/config
+      # Without this bind, every recreate made a new anonymous /cache volume
+      # and orphaned the old one, transcodes included (63 GB by 2026-10).
+      - /jellyfin_cache:/cache
       - /data/media:/media
     devices:
       - /dev/dri/renderD128:/dev/dri/renderD128
