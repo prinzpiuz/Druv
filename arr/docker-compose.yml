@@ -39,7 +39,6 @@ services:
       - 5216:5216 # myspeed
       - 8000:8000 # gluetun
       - 5055:5055 # jellyseer
-      - 6969:6969 # whisparr
     env_file:
       - .env
     networks:
@@ -204,7 +203,7 @@ services:
       - /configs/recyclarr:/config
     restart: always
     environment:
-      - CRON_SCHEDULE=* * * * *
+      - CRON_SCHEDULE=@daily
       - TZ=${TZ}
     env_file:
       - .env
