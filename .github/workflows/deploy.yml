@@ -15,6 +15,17 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.1
         with:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+      # Pins the VPS host key so ssh refuses any other machine at VPS_HOST.
+      - name: Trust VPS host key
+        env:
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          if [ -z "$KNOWN_HOSTS" ]; then
+            echo "VPS_KNOWN_HOSTS secret is empty; add the VPS host key line (ssh-keyscan output)." >&2
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$KNOWN_HOSTS" >> ~/.ssh/known_hosts
       - name: Copy files to Server
         run: |
           rsync -avz --delete \
@@ -24,11 +35,9 @@ jobs:
           --filter='P /configs/' \
           --filter='P /configs/' \
           ./public/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:~/Druv/
-        env:
-          RSYNC_RSH: "ssh -o StrictHostKeyChecking=no"
       - name: Deploy on Server
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           cd ~/Druv/
           export COMPOSE_ENV_FILES=.env,version.env
           docker compose pull
@@ -54,6 +63,6 @@ jobs:
       - name: Clean up old deployments
         if: success()
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
           docker system prune -f
           EOF
