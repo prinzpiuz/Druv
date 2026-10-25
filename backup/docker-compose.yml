@@ -1,8 +1,15 @@
 name: Backup Services
+# json-file without options never rotates; a crash loop could fill the disk.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 services:
   backrest:
     image: garethgeorge/backrest:${BACKREST_VERSION:?set in version.env}
     container_name: backrest
+    logging: *default-logging
     hostname: backrest
     network_mode: host
     volumes:

@@ -1,7 +1,14 @@
+# json-file without options never rotates; a crash loop could fill the disk.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 services:
   caddy:
     image: caddybuilds/caddy-cloudflare:${CADDY_CLOUDFLARE_VERSION:?set in version.env}
     container_name: caddy_homelab
+    logging: *default-logging
     network_mode: host
     environment:
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
@@ -19,6 +26,7 @@ services:
   beszel-agent:
     image: henrygd/beszel-agent:${BESZEL_AGENT_VERSION:?set in version.env}
     container_name: beszel-agent-apps.prinzpiuz.in
+    logging: *default-logging
     restart: unless-stopped
     network_mode: host
     volumes:

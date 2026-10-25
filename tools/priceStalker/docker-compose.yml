@@ -1,8 +1,15 @@
 name: pricestalker
+# json-file without options never rotates; a crash loop could fill the disk.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 services:
   postgres:
     image: postgres:${PRICESTALKER_POSTGRES_VERSION:?set in version.env}
     container_name: pricestalker-db
+    logging: *default-logging
     env_file:
       - ../.env
     environment:
@@ -23,6 +30,7 @@ services:
   backend:
     image: ghcr.io/mikeknight85/pricestalker-backend:${PRICESTALKER_BACKEND_VERSION:?set in version.env}
     container_name: pricestalker-backend
+    logging: *default-logging
     env_file:
       - ../.env
     environment:
@@ -39,6 +47,7 @@ services:
   frontend:
     image: ghcr.io/mikeknight85/pricestalker-frontend:${PRICESTALKER_FRONTEND_VERSION:?set in version.env}
     container_name: pricestalker-frontend
+    logging: *default-logging
     env_file:
       - ../.env
     ports:

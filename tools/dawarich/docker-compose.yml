@@ -1,7 +1,14 @@
+# json-file without options never rotates; a crash loop could fill the disk.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 services:
   dawarich_redis:
     image: redis:${DAWARICH_REDIS_VERSION:?set in version.env}
     container_name: dawarich_redis
+    logging: *default-logging
     command: redis-server
     env_file:
       - ../.env
@@ -20,6 +27,7 @@ services:
     image: postgis/postgis:${DAWARICH_POSTGIS_VERSION:?set in version.env}
     shm_size: 1G
     container_name: dawarich_db
+    logging: *default-logging
     env_file:
       - ../.env
     volumes:

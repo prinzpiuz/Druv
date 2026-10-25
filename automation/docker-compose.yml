@@ -1,7 +1,14 @@
+# json-file without options never rotates; a crash loop could fill the disk.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 services:
   n8n:
     image: docker.n8n.io/n8nio/n8n:${N8N_VERSION:?set in version.env}
     container_name: n8n
+    logging: *default-logging
     restart: unless-stopped
     ports:
       - 5678:5678

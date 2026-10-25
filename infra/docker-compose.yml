@@ -1,8 +1,15 @@
 name: Infra Services
+# json-file without options never rotates; a crash loop could fill the disk.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 services:
   dockerproxy:
     image: ghcr.io/tecnativa/docker-socket-proxy:${DOCKER_SOCKET_PROXY_VERSION:?set in version.env}
     container_name: dockerproxy
+    logging: *default-logging
     environment:
       - CONTAINERS=1
       - SERVICES=1
@@ -20,6 +27,7 @@ services:
   homepage:
     image: ghcr.io/gethomepage/homepage:${HOMEPAGE_VERSION:?set in version.env}
     container_name: homepage
+    logging: *default-logging
     environment:
       PUID: 1000
       PGID: 1000
@@ -52,6 +60,7 @@ services:
   myspeed:
     image: germannewsmaker/myspeed:${MYSPEED_VERSION:?set in version.env}
     container_name: mySpeed
+    logging: *default-logging
     volumes:
       - /configs/myspeed:/myspeed/data
     restart: always
@@ -64,6 +73,7 @@ services:
   myspeed_no_vpn:
     image: germannewsmaker/myspeed:${MYSPEED_VERSION:?set in version.env}
     container_name: mySpeedNoVPN
+    logging: *default-logging
     volumes:
       - /configs/myspeed_no_vpn:/myspeed/data
     restart: always
@@ -75,6 +85,7 @@ services:
   beszel-agent:
     image: henrygd/beszel-agent:${BESZEL_AGENT_VERSION:?set in version.env}
     container_name: beszel-homelab-agent
+    logging: *default-logging
     restart: unless-stopped
     network_mode: host
     volumes:
