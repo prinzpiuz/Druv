@@ -44,6 +44,11 @@ services:
       - FILEBROWSER_CONFIG=/home/filebrowser/data/config.yaml # overrides the default path which is ./config.yaml
       - FILEBROWSER_ADMIN_PASSWORD=${BESZEL_PASSWORD}
       - TZ=${TZ}
+    # The image's check curls port 80, but config.yaml sets http.port 8091, so
+    # it reported unhealthy forever. Only the test is overridden; the image's
+    # timings are kept.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8091/health || exit 1"]
     volumes:
       - /data:/druv/data
       - /configs:/druv/configs
