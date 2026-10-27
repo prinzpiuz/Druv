@@ -115,7 +115,7 @@ report_failed_services() {
 }
 
 start_vpn() {
-    # Eight services depend on gluetun, three of them through its network
+    # Eight services depend on gluetun, five of them through its network
     # namespace. Start it alone and wait, so a slow tunnel does not abort the
     # whole stack, and its own log lands here instead of a bare
     # "dependency failed to start". A dead VPN must not block the rest of the

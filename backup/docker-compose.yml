@@ -23,5 +23,5 @@ services:
       - BACKREST_CONFIG=/config/config.json
       - XDG_CACHE_HOME=/cache
       - TMPDIR=/tmp
-      - TZ=Asia/Kolkata
+      - TZ=${TZ}
     restart: unless-stopped

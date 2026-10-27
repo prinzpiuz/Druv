@@ -15,8 +15,10 @@ services:
       - REVERSE_PROXY_URL=${REVERSE_PROXY_URL}
     env_file:
       - .env
+    # start_caddy.sh renders the template to /etc/caddy/Caddyfile inside the
+    # container. Not bind-mounted: the committed copy went stale and was
+    # overwritten at every start anyway.
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
       - ./Caddyfile.template:/etc/caddy/Caddyfile.template
       - ./caddy_data:/data
       - ./caddy_config:/config

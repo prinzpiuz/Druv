@@ -15,6 +15,11 @@ services:
       - NET_ADMIN
     devices:
       - /dev/net/tun:/dev/net/tun
+    # Moved from qbittorrent, which shares this network namespace: set there,
+    # they changed gluetun's namespace too.
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv6.conf.all.disable_ipv6=1
     volumes:
       - /configs/gluetun:/gluetun
     # The image allows only ~25s (10s grace, 5s interval, 3 retries) to bring up
@@ -65,11 +70,6 @@ services:
       - WEBUI_PORTS=8080/tcp,8080/udp
       - PRIVOXY_ENABLED=false
       - UNBOUND_ENABLED=false
-    cap_add:
-      - NET_ADMIN
-    sysctls:
-      - net.ipv4.conf.all.src_valid_mark=1
-      - net.ipv6.conf.all.disable_ipv6=1
     volumes:
       - /configs/qbit:/config
       - /data:/data
