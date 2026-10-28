@@ -66,17 +66,30 @@ docker_down() {
     success_log "Services stopped successfully."
 }
 
-prune_and_network_setup() {
+network_setup() {
     success_log "--- Full Rebuild Initiated ---"
 
-    success_log "Pruning entire Docker system (-a -f)..."
-    if ! docker system prune -a -f; then
-        warning_log "Warning: Docker system prune failed, but continuing with service restart." >&2
+    if docker network inspect "$NETWORK_NAME" > /dev/null 2>&1; then
+        success_log "Network '$NETWORK_NAME' already exists."
+        return 0
     fi
-
-    success_log "Creating/ensuring network '$NETWORK_NAME' with subnet '$NETWORK_SUBNET'..."
+    success_log "Creating network '$NETWORK_NAME' with subnet '$NETWORK_SUBNET'..."
     if ! docker network create --subnet="$NETWORK_SUBNET" "$NETWORK_NAME"; then
-        warning_log "Warning: Failed to create/ensure network '$NETWORK_NAME'. Compose will use defaults." >&2
+        warning_log "Warning: Failed to create network '$NETWORK_NAME'. Compose will use defaults." >&2
+    fi
+}
+
+# Runs after every stack is up, so only images no container uses (old versions
+# after a bump) are removed. Pruning before `up` deleted all ~23 GB of images,
+# because docker_down had removed every container, and forced a full re-pull.
+prune_unused_images() {
+    if [ "$VPN_HEALTHY" -eq 0 ] || [ "$STACK_FAILED" -eq 1 ]; then
+        warning_log "Skipping image prune: a service that failed to start may have no container, and its image would be deleted." >&2
+        return 0
+    fi
+    success_log "Removing images not used by any container..."
+    if ! docker image prune -a -f; then
+        warning_log "Warning: Docker image prune failed." >&2
     fi
 }
 
@@ -102,7 +115,7 @@ report_failed_services() {
 }
 
 start_vpn() {
-    # Eight services depend on gluetun, three of them through its network
+    # Eight services depend on gluetun, five of them through its network
     # namespace. Start it alone and wait, so a slow tunnel does not abort the
     # whole stack, and its own log lands here instead of a bare
     # "dependency failed to start". A dead VPN must not block the rest of the
@@ -169,7 +182,7 @@ help() {
     echo "Usage: $0 [--all | --never-down-restart]"
     echo ""
     echo "Options:"
-    echo "  --all                    Perform a full system prune and network setup before restarting services."
+    echo "  --all                    Create the network if missing, then remove unused images once all services are up."
     echo "  --never-down-restart     Restart only the services defined in never-down.yml without taking down other services."
     exit 1
 }
@@ -188,13 +201,16 @@ main() {
     docker_down
     sleep 5
     if [ "$1" == "--all" ]; then
-        prune_and_network_setup
+        network_setup
     fi
     start_vpn
     docker_up
     # Runs even when the VPN or a service failed, so the never-down stack and
     # everything unrelated to gluetun still comes back up.
     no_down_restart
+    if [ "$1" == "--all" ]; then
+        prune_unused_images
+    fi
 
     if [ "$VPN_HEALTHY" -eq 0 ]; then
         error_log "Finished with gluetun unhealthy: its eight dependents are down." >&2

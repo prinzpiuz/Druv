@@ -81,7 +81,6 @@ From my homelab, I have made a few services available to the public under [prinz
 | [qBittorrent](https://www.qbittorrent.org/) | Torrent client | /configs |
 | [Radarr](https://radarr.video/) | Movies automation | /configs |
 | [Sonarr](https://sonarr.tv/) | TV automation | /configs |
-| [Readarr](https://readarr.com/) | Book management | /configs |
 | [Prowlarr](https://wiki.servarr.com/prowlarr) | Indexer manager | /configs |
 | [Bazarr](https://www.bazarr.media/) | Subtitle automation | /configs |
 | [Jackett](https://github.com/Jackett/Jackett) | Indexer proxy | /configs |
@@ -140,7 +139,8 @@ From my homelab, I have made a few services available to the public under [prinz
 |------|-------------|--------|
 | [Audiobookshelf](https://www.audiobookshelf.org/) | Audiobooks streaming server | /configs |
 | [Jellyfin](https://jellyfin.org/) | Media server | /configs |
-| [Jellyseerr](https://github.com/Fallenbagel/jellyseerr) | Request manager for Jellyfin | /configs |
+| Jelly Music App | Music player for Jellyfin | none |
+| [Seerr](https://github.com/seerr-team/seerr) | Request manager for Jellyfin | /configs |
 
 ---
 
@@ -160,6 +160,7 @@ Configure environment variables by copying and editing the env File as needed.
 | Name | Description | Config |
 |------|-------------|--------|
 | [Caddy](https://caddyserver.com/) | Reverse proxy & web server |  /configs |
+| [Beszel Agent](https://beszel.dev/) | System Monitoring agent for the VPS | /configs |
 
 ---
 

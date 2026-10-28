@@ -1,4 +1,10 @@
 name: Tools
+# json-file without options never rotates; a crash loop could fill the disk.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 include:
   - path: ./dawarich/docker-compose.yml
   - path: ./blotils/docker-compose.yml
@@ -7,6 +13,7 @@ services:
   qdrant:
     image: qdrant/qdrant:${QDRANT_VERSION:?set in version.env}
     container_name: qdrant
+    logging: *default-logging
     restart: unless-stopped
     ports:
       - 6333:6333
@@ -15,6 +22,7 @@ services:
   bentopdf:
     image: ghcr.io/alam00000/bentopdf-simple:${BENTOPDF_VERSION:?set in version.env}
     container_name: bentopdf
+    logging: *default-logging
     restart: unless-stopped
     ports:
       - 8085:8080

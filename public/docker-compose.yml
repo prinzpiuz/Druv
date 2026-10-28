@@ -1,15 +1,24 @@
+# json-file without options never rotates; a crash loop could fill the disk.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 services:
   caddy:
     image: caddybuilds/caddy-cloudflare:${CADDY_CLOUDFLARE_VERSION:?set in version.env}
     container_name: caddy_homelab
+    logging: *default-logging
     network_mode: host
     environment:
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
       - REVERSE_PROXY_URL=${REVERSE_PROXY_URL}
     env_file:
       - .env
+    # start_caddy.sh renders the template to /etc/caddy/Caddyfile inside the
+    # container. Not bind-mounted: the committed copy went stale and was
+    # overwritten at every start anyway.
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
       - ./Caddyfile.template:/etc/caddy/Caddyfile.template
       - ./caddy_data:/data
       - ./caddy_config:/config
@@ -19,6 +28,7 @@ services:
   beszel-agent:
     image: henrygd/beszel-agent:${BESZEL_AGENT_VERSION:?set in version.env}
     container_name: beszel-agent-apps.prinzpiuz.in
+    logging: *default-logging
     restart: unless-stopped
     network_mode: host
     volumes:

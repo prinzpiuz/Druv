@@ -1,13 +1,25 @@
 name: arr Services
+# json-file without options never rotates; a crash loop could fill the disk.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 services:
   gluetun:
     image: qmcgaw/gluetun:${GLUETUN_VERSION:?set in version.env}
     container_name: gluetun
+    logging: *default-logging
     privileged: true
     cap_add:
       - NET_ADMIN
     devices:
       - /dev/net/tun:/dev/net/tun
+    # Moved from qbittorrent, which shares this network namespace: set there,
+    # they changed gluetun's namespace too.
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv6.conf.all.disable_ipv6=1
     volumes:
       - /configs/gluetun:/gluetun
     # The image allows only ~25s (10s grace, 5s interval, 3 retries) to bring up
@@ -39,7 +51,6 @@ services:
       - 5216:5216 # myspeed
       - 8000:8000 # gluetun
       - 5055:5055 # jellyseer
-      - 6969:6969 # whisparr
     env_file:
       - .env
     networks:
@@ -49,6 +60,7 @@ services:
   qbittorrent:
     image: ghcr.io/hotio/qbittorrent:${QBITTORRENT_VERSION:?set in version.env}
     container_name: qbittorrent
+    logging: *default-logging
     restart: always
     environment:
       - PUID=1000
@@ -58,11 +70,6 @@ services:
       - WEBUI_PORTS=8080/tcp,8080/udp
       - PRIVOXY_ENABLED=false
       - UNBOUND_ENABLED=false
-    cap_add:
-      - NET_ADMIN
-    sysctls:
-      - net.ipv4.conf.all.src_valid_mark=1
-      - net.ipv6.conf.all.disable_ipv6=1
     volumes:
       - /configs/qbit:/config
       - /data:/data
@@ -76,8 +83,7 @@ services:
     image: ghcr.io/hotio/radarr:${RADARR_VERSION:?set in version.env}
     container_name: radarr
     restart: unless-stopped
-    logging:
-      driver: json-file
+    logging: *default-logging
     ports:
       - 7878:7878
     environment:
@@ -99,8 +105,7 @@ services:
     image: ghcr.io/hotio/sonarr:${SONARR_VERSION:?set in version.env}
     container_name: sonarr
     restart: unless-stopped
-    logging:
-      driver: json-file
+    logging: *default-logging
     ports:
       - 8989:8989
     environment:
@@ -121,6 +126,7 @@ services:
   synthwave:
     image: ghcr.io/pranavverma-droid/synthwave:${SYNTHWAVE_VERSION:?set in version.env}
     container_name: synthwave
+    logging: *default-logging
     restart: unless-stopped
     ports:
       - 5000:5000
@@ -135,6 +141,7 @@ services:
   swurApp:
     image: owlcaribou/swurapp@${SWURAPP_DIGEST:?set in version.env}
     container_name: sonarrWatchUntilRelease
+    logging: *default-logging
     restart: unless-stopped
     env_file:
       - .env
@@ -146,12 +153,15 @@ services:
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:${FLARESOLVERR_VERSION:?set in version.env}
     container_name: flaresolverr
+    logging: *default-logging
     environment:
       - LOG_LEVEL=info
       - LOG_HTML=false
       - TZ=${TZ}
     ports:
       - 8191:8191
+    volumes:
+      - /configs/flaresolverr:/config
     restart: unless-stopped
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=1
@@ -163,6 +173,7 @@ services:
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:${PROWLARR_VERSION:?set in version.env}
     container_name: prowlarr
+    logging: *default-logging
     environment:
       - PUID=1000
       - PGID=1000
@@ -181,6 +192,7 @@ services:
   jackett:
     image: lscr.io/linuxserver/jackett:${JACKETT_VERSION:?set in version.env}
     container_name: jackett
+    logging: *default-logging
     environment:
       - PUID=1000
       - PGID=1000
@@ -199,12 +211,13 @@ services:
   recyclarr:
     image: ghcr.io/recyclarr/recyclarr:${RECYCLARR_VERSION:?set in version.env}
     container_name: recyclarr
+    logging: *default-logging
     user: 1000:1000
     volumes:
       - /configs/recyclarr:/config
     restart: always
     environment:
-      - CRON_SCHEDULE=* * * * *
+      - CRON_SCHEDULE=@daily
       - TZ=${TZ}
     env_file:
       - .env
@@ -214,8 +227,7 @@ services:
     image: ghcr.io/hotio/bazarr:${BAZARR_VERSION:?set in version.env}
     container_name: bazarr
     restart: always
-    logging:
-      driver: json-file
+    logging: *default-logging
     ports:
       - 6767:6767
     environment:
@@ -237,6 +249,7 @@ services:
   unpackerr:
     image: golift/unpackerr:${UNPACKERR_VERSION:?set in version.env}
     container_name: unpackerr
+    logging: *default-logging
     volumes:
       - /data:/downloads
     restart: always

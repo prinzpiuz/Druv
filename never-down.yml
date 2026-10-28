@@ -1,7 +1,14 @@
+# json-file without options never rotates; a crash loop could fill the disk.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 services:
   uptime-kuma:
     image: louislam/uptime-kuma:${UPTIME_KUMA_VERSION:?set in version.env}
     container_name: uptime-kuma
+    logging: *default-logging
     restart: unless-stopped
     env_file:
       - .env
@@ -13,6 +20,7 @@ services:
   beszel:
     image: henrygd/beszel:${BESZEL_VERSION:?set in version.env}
     container_name: beszel
+    logging: *default-logging
     restart: unless-stopped
     env_file:
       - .env
@@ -28,6 +36,7 @@ services:
   filebrowser:
     image: gtstef/filebrowser:${FILEBROWSER_VERSION:?set in version.env}
     container_name: filebrowser
+    logging: *default-logging
     env_file:
       - .env
     restart: unless-stopped
@@ -35,6 +44,11 @@ services:
       - FILEBROWSER_CONFIG=/home/filebrowser/data/config.yaml # overrides the default path which is ./config.yaml
       - FILEBROWSER_ADMIN_PASSWORD=${BESZEL_PASSWORD}
       - TZ=${TZ}
+    # The image's check curls port 80, but config.yaml sets http.port 8091, so
+    # it reported unhealthy forever. Only the test is overridden; the image's
+    # timings are kept.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8091/health || exit 1"]
     volumes:
       - /data:/druv/data
       - /configs:/druv/configs
@@ -45,6 +59,7 @@ services:
   couchdb:
     image: couchdb:${COUCHDB_VERSION:?set in version.env}
     container_name: livesync-couchdb
+    logging: *default-logging
     restart: unless-stopped
     env_file:
       - .env

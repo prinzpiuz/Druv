@@ -1,11 +1,12 @@
 #!/bin/bash
+set -euo pipefail
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-./logo.sh
+"$(dirname "$0")/logo.sh"
 
 echo -e "${CYAN}
 ---------------------------------Starting Debian Post Install Script---------------------------------
@@ -16,6 +17,10 @@ if [ "$(id -u)" -ne 0 ]; then
   echo -e "${RED}This script must be run as root.${NC}"
   exit 1
 fi
+
+# $USER is root under sudo, which made root the owner of /data and /configs
+# and put root, not the owner, in the docker group.
+TARGET_USER=${SUDO_USER:?Run this with sudo from the account that will run the stacks.}
 
 # Run Update
 
@@ -61,10 +66,10 @@ echo \
 apt update
 
 # Install Docker packages
-apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-compose
+apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-groupadd docker
-usermod -aG docker $USER
+groupadd -f docker
+usermod -aG docker "$TARGET_USER"
 
 echo -e "${GREEN}Docker Installed.${NC}"
 
@@ -72,38 +77,21 @@ echo -e "${GREEN}Docker Installed.${NC}"
 #Build media directory structure
 
     sudo mkdir -p /data/{torrents/{books,movies,music,tv},usenet/{incomplete,complete/{books,movies,music,tv}},media/{books,movies,music,tv,personal_tv,personal_movie}}
-    sudo mkdir -p /configs/{qbit,qbit_manage,readarr,audiobookshelf,radarr,sonarr,prowlarr,jackett,bazarr,recyclarr,jellyseerr,jellyfin,emby,sabnzbd,homepage,scrutiny,myspeed,qbitrr/qBitManager,gluetun,tailscale/var/lib,tailscale/state}
+    sudo mkdir -p /configs/{audiobookshelf,backrest,bazarr,beszel_agent_data,beszel_server_data,BloTils_Data,filebrowser,flaresolverr,gluetun,homepage,jackett,jellyfin,myspeed,myspeed_no_vpn,prowlarr,qbit,radarr,recyclarr,seerr,sonarr,synthwave,uptime-kuma}
     sudo mkdir -p /jellyfin_cache
-    sudo mkdir -p /influxdb
-    sudo chown -R $USER:$USER /data
+    sudo chown -R "$TARGET_USER:$TARGET_USER" /data
     sudo chmod -R a=,a+rX,u+w,g+w /data
-    sudo chown -R $USER:$USER /configs
+    sudo chown -R "$TARGET_USER:$TARGET_USER" /configs
     sudo chmod -R a=,a+rX,u+w,g+w /configs
-    sudo chown -R $USER:$USER /jellyfin_cache
+    sudo chown -R "$TARGET_USER:$TARGET_USER" /jellyfin_cache
     sudo chmod -R a=,a+rX,u+w,g+w /jellyfin_cache
-    sudo chown -R $USER:$USER /influxdb
-    sudo chmod -R a=,a+rX,u+w,g+w /influxdb
 
 echo -e "${GREEN}Media directory structure created!${NC}"
 
 
-echo -e "${GREEN}Installing FFProbe${NC}"
-
-apt install unzip
-
-cd /configs/qbitrr/qBitManager
-
-wget https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffprobe-6.1-linux-64.zip
-
-unzip ffprobe-6.1-linux-64.zip
-
-rm ffprobe-6.1-linux-64.zip
-
-echo -e "${GREEN}Installing FFProbe Succesfull.${NC}"
-
 echo -e "${GREEN}Installing Inotify${NC}"
 
-apt install inotify-tools
+apt install -y inotify-tools
 
 echo -e "${GREEN}Installing Inotify Succesfull.${NC}"
 
@@ -113,7 +101,7 @@ curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.noarmor.gpg | sudo 
 curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.tailscale-keyring.list | sudo tee /etc/apt/sources.list.d/tailscale.list
 
 sudo apt-get update
-sudo apt-get install tailscale
+sudo apt-get install -y tailscale
 
 echo -e "${GREEN}Installing TailScale Succesfull.${NC}"
 
