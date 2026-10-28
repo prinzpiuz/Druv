@@ -16,16 +16,22 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
       # Pins the VPS host key so ssh refuses any other machine at VPS_HOST.
+      # Only the key type and key are taken from the secret, and the host name is
+      # VPS_HOST itself: ssh matches known_hosts by the exact name it connects to,
+      # so a line for the IP failed when VPS_HOST held anything else.
       - name: Trust VPS host key
         env:
           KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
-          if [ -z "$KNOWN_HOSTS" ]; then
-            echo "VPS_KNOWN_HOSTS secret is empty; add the VPS host key line (ssh-keyscan output)." >&2
+          key=$(printf '%s\n' "$KNOWN_HOSTS" | awk '{ for (i = 1; i < NF; i++) if ($i ~ /^(ssh|ecdsa)-/) { print $i, $(i + 1); exit } }')
+          if [ -z "$key" ]; then
+            echo "VPS_KNOWN_HOSTS has no host key; set it to the ssh-keyscan line for the VPS." >&2
             exit 1
           fi
           mkdir -p ~/.ssh
-          printf '%s\n' "$KNOWN_HOSTS" >> ~/.ssh/known_hosts
+          printf '%s %s\n' "$VPS_HOST" "$key" >> ~/.ssh/known_hosts
+          printf '%s %s\n' "$VPS_HOST" "$key" | ssh-keygen -lf -
       - name: Copy files to Server
         run: |
           rsync -avz --delete \
