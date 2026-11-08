@@ -1,0 +1,266 @@
+{
+  "name": "Logwatch Emails to Telegram Summary",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "b5e4cf4f-bf5f-4004-90c4-1788029bdbad",
+      "name": "Every Day at 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": true,
+        "simple": false,
+        "filters": {
+          "q": "label:logwatch"
+        },
+        "options": {}
+      },
+      "id": "d4f6639b-2404-4751-b4bf-a2b0d62a1e16",
+      "name": "Fetch Logwatch Emails",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "webhookId": "a75d583b-9ecb-4c66-aaa2-9dbaa515f28b",
+      "position": [
+        220,
+        0
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// One prompt for all Logwatch emails found, plus their IDs for deletion later.\n// Logwatch sends plain text; HTML is a fallback in case a mail client rewrote it.\nconst MAX_CHARS_PER_REPORT = 20000;\n\nconst reports = $input.all().map(({ json: mail }) => {\n  let body = mail.text || '';\n  if (!body && mail.html) {\n    body = mail.html\n      .replace(/<style[\\s\\S]*?<\\/style>/gi, '')\n      .replace(/<br\\s*\\/?>/gi, '\\n')\n      .replace(/<[^>]+>/g, ' ')\n      .replace(/&nbsp;/g, ' ')\n      .replace(/&lt;/g, '<')\n      .replace(/&gt;/g, '>')\n      .replace(/&amp;/g, '&');\n  }\n  body = body.replace(/[ \\t]+\\n/g, '\\n').replace(/\\n{3,}/g, '\\n\\n').trim();\n  if (body.length > MAX_CHARS_PER_REPORT) {\n    body = body.slice(0, MAX_CHARS_PER_REPORT) + '\\n[report truncated]';\n  }\n  return {\n    id: mail.id,\n    subject: mail.subject || mail.Subject || '(no subject)',\n    date: mail.date || '',\n    body,\n  };\n}).filter(r => r.id && r.body);\n\nif (reports.length === 0) return [];\n\nconst reportText = reports\n  .map((r, n) => `=== REPORT ${n + 1}: ${r.subject} (${r.date}) ===\\n${r.body}`)\n  .join('\\n\\n');\n\nreturn [{\n  json: {\n    reportCount: reports.length,\n    emailIds: reports.map(r => r.id),\n    reportText,\n  },\n}];\n"
+      },
+      "id": "99af103e-f790-4728-8e25-539a87b17d2b",
+      "name": "Prepare Reports",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-flash-latest",
+          "mode": "list",
+          "cachedResultName": "models/gemini-flash-latest"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a Linux system administrator reading Logwatch reports from a personal homelab: a Debian 12 home server and a Hetzner VPS. Write a short summary that the owner reads on a phone in Telegram.\n\nFORMAT:\n- Plain text only. No Markdown, no HTML, no emoji.\n- At most 2500 characters in total.\n- First, one line per host: \"<hostname>: OK\", \"<hostname>: ATTENTION\" or \"<hostname>: CRITICAL\".\n- Then these sections, in this order, and only the ones that have findings:\n  ACTION NEEDED - the few things the owner should do, most urgent first.\n  SECURITY - failed SSH logins (count and the top source IPs), successful logins (user and source), sudo use, new or changed users.\n  DISK - filesystems at or above 80% full, with the percentage.\n  ERRORS - kernel errors, out-of-memory kills, failed services, hardware or filesystem warnings.\n  UPDATES - pending or installed package updates, as a count.\n- Use \"- \" for list items. Keep each item to one line.\n\nRULES:\n1. Report only what the logs show. Never guess or invent numbers, hosts or IPs.\n2. Collapse repeated lines into one item with a count.\n3. Leave out routine noise: normal cron runs, routine sessions, successful scheduled jobs.\n4. Rate a host CRITICAL for disk at or above 90%, out-of-memory kills, filesystem errors or a successful login from an unknown source. Rate it ATTENTION for disk at or above 80%, failed services or repeated failed logins. Otherwise OK.\n5. If every host is OK and nothing is notable, write the host lines and then \"No issues.\"\n\nHere are the Logwatch reports:\n\n{{ $json.reportText }}\n"
+            }
+          ]
+        },
+        "jsonOutput": false,
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "3b4fb239-60eb-41d6-8ca3-a8f6c0abde50",
+      "name": "Summarise with Gemini",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        0
+      ],
+      "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googlePalmApi": {
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pull the text out of the Gemini response and build the Telegram message.\nconst item = $input.first().json;\nlet text = '';\nif (item?.content?.parts) {\n  text = item.content.parts.map(p => p.text || '').join('');\n} else if (item?.candidates) {\n  text = item.candidates\n    .map(c => c.content?.parts?.map(p => p.text || '').join('') || '')\n    .join('');\n} else if (item?.message?.content) {\n  text = item.message.content;\n} else if (item?.text) {\n  text = item.text;\n} else if (item?.output) {\n  text = item.output;\n}\ntext = String(text).replace(/\\\\n/g, '\\n').trim();\n\n// An empty answer must not lead to deleting the emails unread.\nif (!text) {\n  throw new Error('Gemini returned an empty summary; the Logwatch emails were kept.');\n}\n\nconst prepared = $('Prepare Reports').first().json;\nconst day = new Date().toISOString().slice(0, 10);\nconst header = `Logwatch summary, ${day} (${prepared.reportCount} report${prepared.reportCount === 1 ? '' : 's'})`;\n\n// Telegram rejects messages over 4096 characters.\nlet message = `${header}\\n\\n${text}`;\nif (message.length > 4000) {\n  message = message.slice(0, 3980) + '\\n[cut to fit Telegram]';\n}\n\nreturn [{ json: { message, emailIds: prepared.emailIds } }];\n"
+      },
+      "id": "bd8a8dea-9dd2-422d-8817-3cfdfeb465e9",
+      "name": "Format Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "REPLACE_WITH_OPS_CHAT_ID",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "828425d7-44b4-4207-9b29-47b8da6676b2",
+      "name": "Send to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "webhookId": "8a11b06e-ab79-4626-a12e-fbd4d269ebca",
+      "position": [
+        1100,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "telegramApi": {
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// One item per email, so the Gmail node deletes each of them.\nconst ids = $('Format Message').first().json.emailIds || [];\nreturn ids.map(id => ({ json: { messageId: id } }));\n"
+      },
+      "id": "2090d339-6828-46fc-91f0-b15b1b8cee65",
+      "name": "Split Email IDs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "messageId": "={{ $json.messageId }}"
+      },
+      "id": "84d1673f-1f21-4f62-a9cc-c3e8b5bfb016",
+      "name": "Delete Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "webhookId": "110279d3-917a-4a32-a661-924a685423c8",
+      "position": [
+        1540,
+        0
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every Day at 09:00": {
+      "main": [
+        [
+          {
+            "node": "Fetch Logwatch Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Logwatch Emails": {
+      "main": [
+        [
+          {
+            "node": "Prepare Reports",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Reports": {
+      "main": [
+        [
+          {
+            "node": "Summarise with Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarise with Gemini": {
+      "main": [
+        [
+          {
+            "node": "Format Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Message": {
+      "main": [
+        [
+          {
+            "node": "Send to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to Telegram": {
+      "main": [
+        [
+          {
+            "node": "Split Email IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Email IDs": {
+      "main": [
+        [
+          {
+            "node": "Delete Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "tags": [
+    {
+      "name": "automation"
+    },
+    {
+      "name": "homelab"
+    }
+  ]
+}
