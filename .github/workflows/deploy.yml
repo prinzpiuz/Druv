@@ -47,6 +47,32 @@ jobs:
           export COMPOSE_ENV_FILES=.env,version.env
           docker compose pull
           docker compose up -d --remove-orphans
+          # Caddy renders its config only at container start, and `up -d` does
+          # not recreate it when only the template changed. A changed template
+          # was deployed but never loaded until a manual restart. A reload is not
+          # enough: rsync replaces the file, and a single-file bind mount keeps
+          # showing the old one until the container restarts.
+          host_sum=$(cat Caddyfile.template start_caddy.sh | sha256sum | cut -d ' ' -f 1)
+          running_sum=$(docker exec caddy_homelab cat /etc/caddy/rendered.sha256 2>/dev/null || true)
+          if [ "$host_sum" != "$running_sum" ]; then
+            echo "Caddy config changed; restarting caddy_homelab"
+            docker restart caddy_homelab
+            # start_caddy.sh installs envsubst and validates before it writes
+            # the checksum, so allow it some time.
+            new_sum=""
+            for _ in $(seq 1 15); do
+              sleep 2
+              new_sum=$(docker exec caddy_homelab cat /etc/caddy/rendered.sha256 2>/dev/null || true)
+              [ "$host_sum" = "$new_sum" ] && break
+            done
+            if [ "$host_sum" != "$new_sum" ]; then
+              echo "Caddy did not load the new config" >&2
+              docker logs --tail 50 caddy_homelab >&2
+              exit 1
+            fi
+          else
+            echo "Caddy config unchanged; no restart"
+          fi
           EOF
       - name: Deployment Complete
         if: success()
