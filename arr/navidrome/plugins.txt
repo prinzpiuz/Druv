@@ -3,9 +3,12 @@
 #
 # Format, one plugin per line:
 #   <GitHub repo URL>  <release tag>  <.ndp file name in the release>  [sha256]
+# Use release.ndp=installed.ndp when the plugin must be saved under another
+# name. Navidrome uses the file name as the plugin's ID and keeps its settings
+# and stored data under that name.
 #
 # To add a plugin, run on the server (prints and pins the sha256):
-#   ./scripts/navidrome-plugins.sh add <repo-url> <tag>
+#   ./scripts/navidrome-plugins.sh add <repo-url> <tag> [asset] [installed-name]
 # Without a sha256, the sync trusts the digest GitHub reports for the file and
 # warns on every run. Pin it.
 #
@@ -15,3 +18,16 @@
 # Lyrics from LRCLIB, lrcmux, NetEase and others. Needs Navidrome 0.63+.
 # Listed in ND_LYRICSPRIORITY in arr/docker-compose.yml under this file name.
 https://github.com/J0R6IT0/navidrome-lyrics-plugin  v8.1.0  nd-lyrics.ndp
+
+# Artist bios, images, similar artists and top songs from Apple Music / iTunes.
+# No account needed. Listed first in ND_AGENTS in arr/docker-compose.yml.
+https://github.com/navidrome/apple-music-plugin  v0.2.0  apple-music.ndp
+
+# Imports ListenBrainz daily and weekly playlists. Needs a ListenBrainz account
+# with scrobbling, and per-user setup in the plugin's settings.
+https://github.com/kgarner7/navidrome-listenbrainz-daily-playlist  v6.0.0  listenbrainz-daily-playlist.ndp
+
+# Time-of-day and rediscovery mixes as playlists. The Navidrome 0.64 build reads
+# Navidrome's own play history. Its author says it must be installed as
+# navibeat-mixes.ndp, or Navidrome treats it as a second plugin with no history.
+https://github.com/nenadjokic/navibeat-mixes  v0.9.26  navibeat-mixes-navidrome-0.64.ndp=navibeat-mixes.ndp

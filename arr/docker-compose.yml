@@ -141,6 +141,8 @@ services:
       - ND_PLUGINS_AUTORELOAD=true
       # Local lyrics first, then the nd-lyrics plugin (named after its .ndp file).
       - ND_LYRICSPRIORITY=.lrc,.txt,embedded,nd-lyrics
+      # Metadata sources, tried in order. apple-music is a plugin (plugins.txt).
+      - ND_AGENTS=apple-music,deezer,lastfm,listenbrainz
     volumes:
       - /configs/navidrome:/data
       # Read-only: only Soulbeet writes to the library.
