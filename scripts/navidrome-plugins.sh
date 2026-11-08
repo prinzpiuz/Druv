@@ -2,7 +2,7 @@
 # Keeps a Navidrome plugins folder in step with arr/navidrome/plugins.txt.
 #
 #   navidrome-plugins.sh sync                  install, update and remove plugins
-#   navidrome-plugins.sh add <repo-url> <tag> [asset]
+#   navidrome-plugins.sh add <repo-url> <tag> [asset] [installed-name]
 #                                              download once, print the sha256 and
 #                                              append a pinned line to plugins.txt
 #   navidrome-plugins.sh check                 list plugins with a newer release
@@ -52,6 +52,21 @@ github_api() {
 
 file_sha256() { sha256sum "$1" | cut -d ' ' -f 1; }
 
+# "release.ndp" or "release.ndp=installed.ndp" -> sets src and dest.
+# Navidrome uses the file name as the plugin ID, so some plugins must be saved
+# under a name other than the one in the release.
+split_asset() {
+	src=${1%%=*}
+	dest=${1#*=}
+	local name
+	for name in "$src" "$dest"; do
+		if [[ $name != *.ndp || $name == */* || $name == *=* ]]; then
+			error_log "asset must be a .ndp file name, or release.ndp=installed.ndp: $1"
+			return 1
+		fi
+	done
+}
+
 # Prints "url tag asset sha256" for each entry; sha256 may be empty.
 read_entries() {
 	if [[ ! -f $PLUGINS_FILE ]]; then
@@ -70,7 +85,7 @@ read_entries() {
 }
 
 sync_plugins() {
-	local status=0 entries url tag asset expected repo digest target tmp actual
+	local status=0 entries url tag asset expected repo digest target tmp actual src dest
 	local -a wanted=()
 	entries=$(read_entries)
 	mkdir -p "$PLUGINS_DIR"
@@ -82,54 +97,64 @@ sync_plugins() {
 			status=1
 			continue
 		}
-		if [[ $asset != *.ndp || $asset == */* ]]; then
-			error_log "asset must be a .ndp file name: $asset"
+		split_asset "$asset" || {
 			status=1
 			continue
-		fi
-		wanted+=("$asset")
-		target="$PLUGINS_DIR/$asset"
+		}
+		wanted+=("$dest")
+		target="$PLUGINS_DIR/$dest"
 
 		if [[ -z $expected ]]; then
 			if ! digest=$(github_api "repos/$repo/releases/tags/$tag" |
-				jq -r --arg a "$asset" '.assets[] | select(.name == $a) | .digest // empty'); then
-				warning_log "cannot reach GitHub for $asset; keeping the installed copy"
+				jq -r --arg a "$src" '.assets[] | select(.name == $a) | .digest // empty'); then
+				warning_log "cannot reach GitHub for $src; keeping the installed copy"
 				continue
 			fi
 			if [[ $digest != sha256:* ]]; then
-				error_log "$repo $tag has no $asset, or GitHub gives no digest for it. Pin a sha256 in plugins.txt."
+				error_log "$repo $tag has no $src, or GitHub gives no digest for it. Pin a sha256 in plugins.txt."
 				status=1
 				continue
 			fi
 			expected=${digest#sha256:}
-			warning_log "$asset is not pinned; trusting GitHub's digest $expected. Run 'add' to pin it."
+			warning_log "$src is not pinned; trusting GitHub's digest $expected. Run 'add' to pin it."
 		fi
 
 		if [[ -f $target && $(file_sha256 "$target") == "$expected" ]]; then
-			success_log "$asset $tag is up to date"
+			success_log "$dest $tag is up to date"
 			continue
 		fi
 
 		# Not .ndp, so Navidrome ignores the partial file during the download.
 		tmp=$(mktemp "$PLUGINS_DIR/.download.XXXXXX")
 		if ! curl -fsSL --retry 3 -o "$tmp" \
-			"https://github.com/$repo/releases/download/$tag/$asset"; then
+			"https://github.com/$repo/releases/download/$tag/$src"; then
 			rm -f "$tmp"
-			warning_log "download failed for $asset $tag; keeping the installed copy"
+			warning_log "download failed for $src $tag; keeping the installed copy"
 			continue
 		fi
 		actual=$(file_sha256 "$tmp")
 		if [[ $actual != "$expected" ]]; then
 			rm -f "$tmp"
-			error_log "checksum mismatch for $asset $tag: expected $expected, got $actual"
+			error_log "checksum mismatch for $src $tag: expected $expected, got $actual"
 			status=1
 			continue
 		fi
 		chmod 644 "$tmp"
 		[[ $(id -u) -eq 0 ]] && chown "$PLUGINS_OWNER" "$tmp"
 		mv -f "$tmp" "$target"
-		success_log "installed $asset $tag"
+		if [[ $src == "$dest" ]]; then
+			success_log "installed $dest $tag"
+		else
+			success_log "installed $src $tag as $dest"
+		fi
 	done <<<"$entries"
+
+	# A failed entry may be a typo in a line that should stay, so delete nothing
+	# until every entry succeeds.
+	if [[ $status -ne 0 ]]; then
+		warning_log "errors above; not removing any plugins this run"
+		return "$status"
+	fi
 
 	# Remove plugins this script installed that are no longer listed.
 	local old keep w
@@ -150,7 +175,8 @@ sync_plugins() {
 }
 
 add_plugin() {
-	local url=${1:-} tag=${2:-} asset=${3:-} repo release names count tmp sha digest
+	local url=${1:-} tag=${2:-} asset=${3:-} install_name=${4:-} repo release names count tmp sha digest
+	local entry_name src dest
 	[[ -z $url || -z $tag ]] && usage
 	repo=$(repo_from_url "$url")
 	release=$(github_api "repos/$repo/releases/tags/$tag")
@@ -164,8 +190,11 @@ add_plugin() {
 		fi
 		asset=$names
 	fi
-	if read_entries | awk '{ print $3 }' | grep -qxF "$asset"; then
-		error_log "$asset is already in $PLUGINS_FILE"
+	entry_name=$asset
+	[[ -n $install_name ]] && entry_name="$asset=$install_name"
+	split_asset "$entry_name"
+	if read_entries | awk '{ n = $3; sub(/.*=/, "", n); print n }' | grep -qxF "$dest"; then
+		error_log "$dest is already in $PLUGINS_FILE"
 		return 1
 	fi
 
@@ -179,8 +208,8 @@ add_plugin() {
 		return 1
 	fi
 
-	printf '%s  %s  %s  %s\n' "https://github.com/$repo" "$tag" "$asset" "$sha" >>"$PLUGINS_FILE"
-	success_log "added $asset $tag ($sha) to $PLUGINS_FILE"
+	printf '%s  %s  %s  %s\n' "https://github.com/$repo" "$tag" "$entry_name" "$sha" >>"$PLUGINS_FILE"
+	success_log "added $entry_name $tag ($sha) to $PLUGINS_FILE"
 	echo "Review the plugin's permissions, commit plugins.txt and redeploy."
 }
 
