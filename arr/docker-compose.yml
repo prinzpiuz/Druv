@@ -175,6 +175,24 @@ services:
           exit 0
         fi
         exec bash /navidrome-plugins.sh sync
+  # Web player. It runs in the browser, which talks to Navidrome at SERVER_URL.
+  feishin:
+    image: ghcr.io/jeffvli/feishin:${FEISHIN_VERSION:?set in version.env}
+    container_name: feishin
+    logging: *default-logging
+    restart: unless-stopped
+    ports:
+      - 9180:9180
+    environment:
+      - SERVER_NAME=Navidrome
+      - SERVER_TYPE=navidrome
+      - SERVER_URL=https://music.prinzpiuz.in
+      # Users can log in, but cannot change or add servers.
+      - SERVER_LOCK=true
+      - LEGACY_AUTHENTICATION=false
+      - ANALYTICS_DISABLED=true
+    networks:
+      - ${NETWORK_NAME}
   # Soulseek traffic goes through the VPN. Its web UI port is published on gluetun.
   slskd:
     image: slskd/slskd:${SLSKD_VERSION:?set in version.env}
