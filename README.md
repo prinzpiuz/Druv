@@ -88,7 +88,9 @@ From my homelab, I have made a few services available to the public under [prinz
 | [Unpackerr](https://github.com/Unpackerr/unpackerr) | Unpack Downloaded Files |/configs |
 | [Flaresolverr](https://github.com/FlareSolverr/FlareSolverr) | Captcha solver | /configs |
 | [SwurApp](https://github.com/OwlCaribou/swurApp) | Companion utility | /configs |
-| [Synthwave](https://github.com/PranavVerma-droid/Synthwave) | Music Downloader| /configs|
+| [Navidrome](https://www.navidrome.org/) | Music streaming server | /configs |
+| [slskd](https://github.com/slskd/slskd) | Soulseek client, runs through Gluetun | /configs |
+| [Soulbeet](https://github.com/terry90/soulbeet) | Music downloader and tagger (slskd + beets) | /configs |
 
 ---
 

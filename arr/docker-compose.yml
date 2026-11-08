@@ -51,6 +51,7 @@ services:
       - 5216:5216 # myspeed
       - 8000:8000 # gluetun
       - 5055:5055 # jellyseer
+      - 5030:5030 # slskd
     env_file:
       - .env
     networks:
@@ -123,21 +124,72 @@ services:
     networks:
       default:
         ipv4_address: ${SONARR_IPV4_ADDR}
-  synthwave:
-    image: ghcr.io/pranavverma-droid/synthwave:${SYNTHWAVE_VERSION:?set in version.env}
-    container_name: synthwave
+  navidrome:
+    image: deluan/navidrome:${NAVIDROME_VERSION:?set in version.env}
+    container_name: navidrome
     logging: *default-logging
     restart: unless-stopped
+    user: 1000:1000
     ports:
-      - 5000:5000
-    volumes:
-      - /data/media/music:/music
-      - /data/media/music:/playlists
-      - /configs/synthwave/config:/app/config
-      - /configs/synthwave/logs:/app/logs
+      - 4533:4533
     environment:
       - TZ=${TZ}
-      - FLASK_ENV=production
+      - ND_MUSICFOLDER=/music
+      - ND_LASTFM_APIKEY=${ND_LASTFM_APIKEY}
+      - ND_LASTFM_SECRET=${ND_LASTFM_SECRET}
+    volumes:
+      - /configs/navidrome:/data
+      # Read-only: only Soulbeet writes to the library.
+      - /data/media/music:/music:ro
+    networks:
+      - ${NETWORK_NAME}
+  # Soulseek traffic goes through the VPN. Its web UI port is published on gluetun.
+  slskd:
+    image: slskd/slskd:${SLSKD_VERSION:?set in version.env}
+    container_name: slskd
+    logging: *default-logging
+    restart: unless-stopped
+    user: 1000:1000
+    environment:
+      - TZ=${TZ}
+      # Soulbeet changes slskd settings through the API.
+      - SLSKD_REMOTE_CONFIGURATION=true
+      - SLSKD_USERNAME=${SLSKD_USERNAME}
+      - SLSKD_PASSWORD=${SLSKD_PASSWORD}
+      - SLSKD_SLSK_USERNAME=${SLSKD_SLSK_USERNAME}
+      - SLSKD_SLSK_PASSWORD=${SLSKD_SLSK_PASSWORD}
+      - SLSKD_API_KEY=${SLSKD_API_KEY}
+    volumes:
+      - /configs/slskd:/app
+      - /data/slskd/downloads:/app/downloads
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
+  soulbeet:
+    image: docker.io/docccccc/soulbeet:${SOULBEET_VERSION:?set in version.env}
+    container_name: soulbeet
+    logging: *default-logging
+    restart: unless-stopped
+    user: 1000:1000
+    ports:
+      - 9765:9765
+    environment:
+      - TZ=${TZ}
+      - DATABASE_URL=sqlite:/data/soulbeet.db
+      - DOWNLOAD_PATH=/downloads
+      - SECRET_KEY=${SOULBEET_SECRET_KEY}
+      - NAVIDROME_URL=http://navidrome:4533
+    volumes:
+      - /configs/soulbeet:/data
+      # Both paths must match the slskd and Navidrome mounts above.
+      - /data/slskd/downloads:/downloads
+      - /data/media/music:/music
+    networks:
+      - ${NETWORK_NAME}
+    depends_on:
+      - slskd
+      - navidrome
   swurApp:
     image: owlcaribou/swurapp@${SWURAPP_DIGEST:?set in version.env}
     container_name: sonarrWatchUntilRelease
