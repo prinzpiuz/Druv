@@ -91,7 +91,7 @@ From my homelab, I have made a few services available to the public under [prinz
 | [Navidrome](https://www.navidrome.org/) | Music streaming server | /configs |
 | [slskd](https://github.com/slskd/slskd) | Soulseek client, runs through Gluetun | /configs |
 | [Soulbeet](https://github.com/terry90/soulbeet) | Music downloader and tagger (slskd + beets) | /configs |
-| [Feishin](https://github.com/jeffvli/feishin) | Web music player for Navidrome | none |
+| [Feishin](https://github.com/jeffvli/feishin) | Web music player for Navidrome, at mplay.prinzpiuz.in | none |
 | navidrome-plugins | One-shot: installs the plugins in [plugins.txt](arr/navidrome/plugins.txt) | /configs |
 
 **Navidrome plugins** are listed in [`arr/navidrome/plugins.txt`](arr/navidrome/plugins.txt), pinned to a release and a sha256. The `navidrome-plugins` container installs that list before Navidrome starts and removes plugins taken off the list. To add one, run `./scripts/navidrome-plugins.sh add <repo-url> <tag>` on the server, commit the changed `plugins.txt`, then enable the plugin in Navidrome's admin UI. `./scripts/navidrome-plugins.sh check` lists plugins with a newer release.

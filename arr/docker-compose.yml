@@ -177,7 +177,8 @@ services:
           exit 0
         fi
         exec bash /navidrome-plugins.sh sync
-  # Web player. It runs in the browser, which talks to Navidrome at SERVER_URL.
+  # Web player, public at mplay.prinzpiuz.in. It runs in the browser, which
+  # talks to Navidrome at SERVER_URL.
   feishin:
     image: ghcr.io/jeffvli/feishin:${FEISHIN_VERSION:?set in version.env}
     container_name: feishin
