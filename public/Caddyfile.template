@@ -71,6 +71,10 @@ workflows.prinzpiuz.in {
 	import proxy ${REVERSE_PROXY_URL}:5678
 }
 
+music.prinzpiuz.in {
+	import proxy ${REVERSE_PROXY_URL}:4533
+}
+
 # CouchDB for Obsidian LiveSync.
 livesync.prinzpiuz.in {
 	@admin path /_utils* /_membership* /_cluster_setup* /_node/* /_all_dbs /_active_tasks /_scheduler*

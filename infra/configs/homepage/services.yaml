@@ -116,6 +116,12 @@
         ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8100
         server: druv-docker
         container: jellyfin-music
+    - Navidrome:
+        icon: navidrome.png
+        href: https://music.prinzpiuz.in
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:4533
+        server: druv-docker
+        container: navidrome
 - ARR:
     - seerr:
         icon: jellyseerr.png
@@ -147,12 +153,18 @@
           type: sonarr
           url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8989
           key: "{{HOMEPAGE_VAR_SONARR_API_KEY}}"
-    - Synthwave:
-        icon: https://raw.githubusercontent.com/PranavVerma-droid/Synthwave/refs/heads/master/static/logo/logo.jpg
-        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5000
-        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5000
+    - Soulbeet:
+        icon: https://raw.githubusercontent.com/terry90/soulbeet/refs/tags/v0.8.0/ui/assets/logo.svg
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9765
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9765
         server: druv-docker
-        container: qdrant
+        container: soulbeet
+    - slskd:
+        icon: slskd.png
+        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5030
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5030
+        server: druv-docker
+        container: slskd
     - Prowlarr:
         icon: prowlarr.png
         href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9696
