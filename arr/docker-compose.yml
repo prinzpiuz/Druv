@@ -137,10 +137,63 @@ services:
       - ND_MUSICFOLDER=/music
       - ND_LASTFM_APIKEY=${ND_LASTFM_APIKEY}
       - ND_LASTFM_SECRET=${ND_LASTFM_SECRET}
+      # navidrome-plugins replaces files in /data/plugins; load them without a restart.
+      - ND_PLUGINS_AUTORELOAD=true
+      # Local lyrics first, then the nd-lyrics plugin (named after its .ndp file).
+      - ND_LYRICSPRIORITY=.lrc,.txt,embedded,nd-lyrics
+      # Metadata sources, tried in order. apple-music is a plugin (plugins.txt).
+      - ND_AGENTS=apple-music,deezer,lastfm,listenbrainz
     volumes:
       - /configs/navidrome:/data
       # Read-only: only Soulbeet writes to the library.
       - /data/media/music:/music:ro
+    networks:
+      - ${NETWORK_NAME}
+    depends_on:
+      navidrome-plugins:
+        condition: service_completed_successfully
+  # One-shot: installs the plugins listed in navidrome/plugins.txt, then exits.
+  # It exits 0 when GitHub is unreachable, so Navidrome still starts. A checksum
+  # mismatch fails it and keeps Navidrome down until plugins.txt is fixed.
+  navidrome-plugins:
+    image: alpine:${NAVIDROME_PLUGINS_ALPINE_VERSION:?set in version.env}
+    container_name: navidrome-plugins
+    logging: *default-logging
+    restart: "no"
+    environment:
+      - PLUGINS_FILE=/plugins.txt
+      - PLUGINS_DIR=/plugins
+      - PLUGINS_OWNER=1000:1000
+    volumes:
+      - ./navidrome/plugins.txt:/plugins.txt:ro
+      - ../scripts/navidrome-plugins.sh:/navidrome-plugins.sh:ro
+      - /configs/navidrome/plugins:/plugins
+    command:
+      - /bin/sh
+      - -c
+      - |
+        if ! apk add --no-cache bash curl jq > /dev/null; then
+          echo "[navidrome-plugins] WARNING: apk failed; keeping installed plugins" >&2
+          exit 0
+        fi
+        exec bash /navidrome-plugins.sh sync
+  # Web player, public at mplay.prinzpiuz.in. It runs in the browser, which
+  # talks to Navidrome at SERVER_URL.
+  feishin:
+    image: ghcr.io/jeffvli/feishin:${FEISHIN_VERSION:?set in version.env}
+    container_name: feishin
+    logging: *default-logging
+    restart: unless-stopped
+    ports:
+      - 9180:9180
+    environment:
+      - SERVER_NAME=Navidrome
+      - SERVER_TYPE=navidrome
+      - SERVER_URL=https://music.prinzpiuz.in
+      # Users can log in, but cannot change or add servers.
+      - SERVER_LOCK=true
+      - LEGACY_AUTHENTICATION=false
+      - ANALYTICS_DISABLED=true
     networks:
       - ${NETWORK_NAME}
   # Soulseek traffic goes through the VPN. Its web UI port is published on gluetun.

@@ -122,6 +122,12 @@
         ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:4533
         server: druv-docker
         container: navidrome
+    - Feishin:
+        icon: feishin.png
+        href: https://mplay.prinzpiuz.in
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9180
+        server: druv-docker
+        container: feishin
 - ARR:
     - seerr:
         icon: jellyseerr.png
