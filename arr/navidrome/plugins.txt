@@ -1,0 +1,17 @@
+# Navidrome plugins. scripts/navidrome-plugins.sh installs exactly this list into
+# /configs/navidrome/plugins before Navidrome starts.
+#
+# Format, one plugin per line:
+#   <GitHub repo URL>  <release tag>  <.ndp file name in the release>  [sha256]
+#
+# To add a plugin, run on the server (prints and pins the sha256):
+#   ./scripts/navidrome-plugins.sh add <repo-url> <tag>
+# Without a sha256, the sync trusts the digest GitHub reports for the file and
+# warns on every run. Pin it.
+#
+# Removing a line removes the plugin on the next deploy. Enabling a plugin and
+# its settings stay in the Navidrome admin UI.
+
+# Lyrics from LRCLIB, lrcmux, NetEase and others. Needs Navidrome 0.63+.
+# Listed in ND_LYRICSPRIORITY in arr/docker-compose.yml under this file name.
+https://github.com/J0R6IT0/navidrome-lyrics-plugin  v8.1.0  nd-lyrics.ndp
