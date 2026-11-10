@@ -39,6 +39,9 @@ services:
       - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
       - SERVER_CITIES=${SERVER_CITIES}
       - UPDATER_PERIOD=24h
+      # Lets containers in this namespace reach homelab services.
+      # Internet traffic still goes only through the tunnel.
+      - FIREWALL_OUTBOUND_SUBNETS=172.18.0.0/24
     restart: always
     ports:
       - 54509:54509
@@ -145,10 +148,13 @@ services:
       - ND_AGENTS=apple-music,deezer,lastfm,listenbrainz
     volumes:
       - /configs/navidrome:/data
-      # Read-only: only Soulbeet writes to the library.
+      # Read-only: Soulbeet writes to the library.
       - /data/media/music:/music:ro
     networks:
-      - ${NETWORK_NAME}
+      default:
+        # Fixed so services in gluetun's namespace can reach it; the stack's
+        # DNS names do not resolve there.
+        ipv4_address: ${NAVIDROME_IPV4_ADDR}
     depends_on:
       navidrome-plugins:
         condition: service_completed_successfully
