@@ -110,18 +110,6 @@
           type: audiobookshelf
           url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8585
           key: "{{HOMEPAGE_VAR_AUDIOBOOKSHELF_API_KEY}}"
-    - Music:
-        icon: jellyfin.png
-        href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8100
-        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8100
-        server: druv-docker
-        container: jellyfin-music
-    - Navidrome:
-        icon: navidrome.png
-        href: https://music.prinzpiuz.in
-        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:4533
-        server: druv-docker
-        container: navidrome
     - Feishin:
         icon: feishin.png
         href: https://mplay.prinzpiuz.in
@@ -159,6 +147,12 @@
           type: sonarr
           url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8989
           key: "{{HOMEPAGE_VAR_SONARR_API_KEY}}"
+    - Navidrome:
+        icon: navidrome.png
+        href: https://music.prinzpiuz.in
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:4533
+        server: druv-docker
+        container: navidrome
     - Soulbeet:
         icon: https://raw.githubusercontent.com/terry90/soulbeet/refs/tags/v0.8.0/ui/assets/logo.svg
         href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9765
