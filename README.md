@@ -93,8 +93,17 @@ From my homelab, I have made a few services available to the public under [prinz
 | [Soulbeet](https://github.com/terry90/soulbeet) | Music downloader and tagger (slskd + beets) | /configs |
 | [Feishin](https://github.com/jeffvli/feishin) | Web music player for Navidrome, at mplay.prinzpiuz.in | none |
 | navidrome-plugins | One-shot: installs the plugins in [plugins.txt](arr/navidrome/plugins.txt) | /configs |
+| [music-sync](arr/music-sync/) | Every 6 h: downloads missing playlist songs and FLAC upgrades through Soulseek, reports to Telegram | /configs |
 
 **Navidrome plugins** are listed in [`arr/navidrome/plugins.txt`](arr/navidrome/plugins.txt), pinned to a release and a sha256. The `navidrome-plugins` container installs that list before Navidrome starts and removes plugins taken off the list. To add one, run `./scripts/navidrome-plugins.sh add <repo-url> <tag>` on the server, commit the changed `plugins.txt`, then enable the plugin in Navidrome's admin UI. `./scripts/navidrome-plugins.sh check` lists plugins with a newer release.
+
+**music-sync** ([`arr/music-sync/`](arr/music-sync/)) keeps the library in step with the playlist CSVs in `/configs/music-sync/playlists/`. These live on the server, not in this repo. Every 6 hours it:
+1. asks Navidrome which playlist songs are missing, and which songs exist only as lossy files;
+2. downloads missing songs through Soulseek, as FLAC or else 320 kbps;
+3. downloads FLAC versions of up to 50 lossy songs. A FLAC whose length matches gets the old file's tags and replaces it at the same path, so Navidrome keeps its plays and ratings. The old file moves to `/data/music-retired`;
+4. scans, rebuilds the playlists and reports to the ops Telegram chat.
+
+It starts in dry-run mode (`MUSIC_SYNC_DRY_RUN=true` in `arr/.env`). Logs: `docker logs music-sync`. Run it once now: `docker exec music-sync python3 /app/music_sync.py --once`.
 
 ---
 

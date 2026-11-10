@@ -76,9 +76,9 @@ echo -e "${GREEN}Docker Installed.${NC}"
 
 #Build media directory structure
 
-    sudo mkdir -p /data/slskd/downloads
+    sudo mkdir -p /data/slskd/downloads /data/music-retired
     sudo mkdir -p /data/{torrents/{books,movies,music,tv},usenet/{incomplete,complete/{books,movies,music,tv}},media/{books,movies,music,tv,personal_tv,personal_movie}}
-    sudo mkdir -p /configs/{audiobookshelf,backrest,bazarr,beszel_agent_data,beszel_server_data,BloTils_Data,filebrowser,flaresolverr,gluetun,homepage,jackett,jellyfin,myspeed,myspeed_no_vpn,navidrome,prowlarr,qbit,radarr,recyclarr,seerr,slskd,sonarr,soulbeet,uptime-kuma}
+    sudo mkdir -p /configs/{audiobookshelf,backrest,bazarr,beszel_agent_data,beszel_server_data,BloTils_Data,filebrowser,flaresolverr,gluetun,homepage,jackett,jellyfin,myspeed,myspeed_no_vpn,navidrome,prowlarr,qbit,radarr,recyclarr,seerr,slskd,sonarr,soulbeet,music-sync,uptime-kuma}
     sudo mkdir -p /jellyfin_cache
     sudo chown -R "$TARGET_USER:$TARGET_USER" /data
     sudo chmod -R a=,a+rX,u+w,g+w /data

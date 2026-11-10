@@ -39,6 +39,9 @@ services:
       - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
       - SERVER_CITIES=${SERVER_CITIES}
       - UPDATER_PERIOD=24h
+      # Lets containers in this namespace (music-sync) reach homelab services.
+      # Internet traffic still goes only through the tunnel.
+      - FIREWALL_OUTBOUND_SUBNETS=172.18.0.0/24
     restart: always
     ports:
       - 54509:54509
@@ -145,10 +148,13 @@ services:
       - ND_AGENTS=apple-music,deezer,lastfm,listenbrainz
     volumes:
       - /configs/navidrome:/data
-      # Read-only: only Soulbeet writes to the library.
+      # Read-only: Soulbeet and music-sync write to the library.
       - /data/media/music:/music:ro
     networks:
-      - ${NETWORK_NAME}
+      default:
+        # Fixed so music-sync can reach it from gluetun's namespace, where the
+        # stack's DNS names do not resolve.
+        ipv4_address: ${NAVIDROME_IPV4_ADDR}
     depends_on:
       navidrome-plugins:
         condition: service_completed_successfully
@@ -243,6 +249,56 @@ services:
     depends_on:
       - slskd
       - navidrome
+  # Every few hours: checks the playlist CSVs against Navidrome, downloads
+  # missing songs (FLAC, else 320 kbps) and FLAC upgrades of lossy songs through
+  # Soulseek, rebuilds the playlists, reports to Telegram. See arr/music-sync/.
+  # Soulseek traffic uses the VPN: it runs in gluetun's network namespace.
+  music-sync:
+    build:
+      context: ./music-sync
+      args:
+        DOTNET_SDK_IMAGE: mcr.microsoft.com/dotnet/sdk:${MUSIC_SYNC_DOTNET_SDK_VERSION:?set in version.env}
+        PYTHON_IMAGE: python:${MUSIC_SYNC_PYTHON_VERSION:?set in version.env}
+        SOCKSEEK_VERSION: ${SOCKSEEK_VERSION:?set in version.env}
+        SOCKSEEK_COMMIT: ${SOCKSEEK_COMMIT:?set in version.env}
+        MUTAGEN_VERSION: ${MUTAGEN_VERSION:?set in version.env}
+    image: druv/music-sync:sockseek-${SOCKSEEK_VERSION:?set in version.env}
+    pull_policy: build
+    container_name: music-sync
+    logging: *default-logging
+    restart: unless-stopped
+    user: 1000:1000
+    network_mode: service:gluetun
+    # Sockseek ran out of memory and open files with the defaults.
+    mem_limit: 1536m
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    stop_grace_period: 30s
+    environment:
+      - TZ=${TZ}
+      - NAVIDROME_URL=http://${NAVIDROME_IPV4_ADDR}:4533
+      - NAVIDROME_USER=${MUSIC_SYNC_NAVIDROME_USER}
+      - NAVIDROME_PASSWORD=${MUSIC_SYNC_NAVIDROME_PASSWORD}
+      - SLSK_USERNAME=${MUSIC_SYNC_SLSK_USERNAME}
+      - SLSK_PASSWORD=${MUSIC_SYNC_SLSK_PASSWORD}
+      - TELEGRAM_BOT_TOKEN=${MUSIC_SYNC_TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${MUSIC_SYNC_TELEGRAM_CHAT_ID}
+      # Starts as a dry run: it reports what it would do and changes nothing.
+      - SYNC_DRY_RUN=${MUSIC_SYNC_DRY_RUN:-true}
+      - SYNC_INTERVAL_HOURS=6
+      - UPGRADE_BATCH=${MUSIC_SYNC_UPGRADE_BATCH:-50}
+      - LOSSY_MIN_BITRATE=320
+    volumes:
+      - /configs/music-sync:/config
+      - /data/media/music:/music
+      - /data/music-retired:/retired
+    depends_on:
+      gluetun:
+        condition: service_healthy
+      navidrome:
+        condition: service_started
   swurApp:
     image: owlcaribou/swurapp@${SWURAPP_DIGEST:?set in version.env}
     container_name: sonarrWatchUntilRelease
