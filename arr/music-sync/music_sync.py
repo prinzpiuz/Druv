@@ -362,6 +362,8 @@ def run_once(settings, state):
         missing, in_playlists, _ = check_playlists(api, playlists)
 
         real = [s for s in library if str(s.get('path', '')).startswith(str(MUSIC) + '/')]
+        # Count lossy songs from the whole library; upgrading needs the real path.
+        lossy_all = [s for s in library if (s.get('suffix') or '').lower() not in LOSSLESS]
         lossy = [s for s in real if (s.get('suffix') or '').lower() not in LOSSLESS]
         if library and not real:
             report['warnings'].append('Navidrome is not reporting real file paths, so upgrades are off. '
@@ -376,9 +378,10 @@ def run_once(settings, state):
         upgrade_rows = [{'Artist': s.get('artist', ''), 'Title': s.get('title', ''), 'Album': s.get('album', ''),
                          'Length': int(round(float(s['duration']))), '_song': s} for s in upgrades]
 
-        summary = [f'Library: {len(library)} songs, {len(lossy)} lossy',
+        summary = [f'Library: {len(library)} songs, {len(lossy_all)} lossy',
                    f'Playlist songs missing: {len(missing)}',
-                   f'Upgrades this run: {len(upgrades)} of {len(lossy)} lossy']
+                   f'Upgrades this run: {len(upgrades)} of {len(lossy_all)} lossy' if real
+                   else 'Upgrades this run: off (no real file paths)']
 
         if settings.dry_run:
             lines = [f'<b>Music sync (dry run)</b> · {started:%d %b %H:%M}'] + summary
