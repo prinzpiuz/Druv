@@ -104,6 +104,7 @@ From my homelab, I have made a few services available to the public under [prinz
 4. scans, rebuilds the playlists and reports to the ops Telegram chat.
 
 It starts in dry-run mode (`MUSIC_SYNC_DRY_RUN=true` in `arr/.env`). Logs: `docker logs music-sync`. Run it once now: `docker exec music-sync python3 /app/music_sync.py --once`.
+How it works, its files and settings, and troubleshooting: [docs/music-sync.md](docs/music-sync.md).
 
 ---
 
