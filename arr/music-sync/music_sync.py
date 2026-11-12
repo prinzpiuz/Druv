@@ -407,7 +407,11 @@ def run_once(settings, state):
             code, timed_out = result
             if timed_out:
                 problems.append(f'{name}: stopped at the {settings.sockseek_timeout_min:g}-minute limit')
-            elif code not in (0, None) and not _stop:
+            # Sockseek v3.0.6 exit codes: 0 all found, 1 some songs not found
+            # (normal here), 2 bad option or input, 130 cancelled.
+            elif code == 2:
+                problems.append(f'{name}: Sockseek rejected its options or input')
+            elif code not in (0, 1, 130, None) and not _stop:
                 problems.append(f'{name}: Sockseek exited with code {code}')
 
         # Pass 1: FLAC for missing songs.
