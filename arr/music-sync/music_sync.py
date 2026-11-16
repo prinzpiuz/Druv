@@ -4,7 +4,8 @@
 Every SYNC_INTERVAL_HOURS:
   1. Read the library from Navidrome (Subsonic API).
   2. List the playlist songs Navidrome does not have ("missing"), and up to
-     UPGRADE_BATCH songs it has only as lossy files ("upgrades").
+     UPGRADE_BATCH songs it has only as lossy files ("upgrades"). Upgrades skip
+     UPGRADE_SKIP_DIRS (Soulbeet's Discovery folder).
   3. Sockseek, FLAC only: missing songs into /music, upgrades into a staging
      folder.
   4. Sockseek, FLAC or >= LOSSY_MIN_BITRATE kbps: songs still missing.
@@ -81,6 +82,10 @@ class Settings:
         self.dry_run = setting('SYNC_DRY_RUN', True, bool)
         self.upgrade_batch = setting('UPGRADE_BATCH', 50, int)
         self.upgrade_retry_days = setting('UPGRADE_RETRY_DAYS', 7, int)
+        # Folders under /music that are never upgraded. Soulbeet Discovery
+        # songs are temporary: Soulbeet deletes or moves them after rating.
+        self.upgrade_skip_dirs = [d.strip().strip('/') for d in
+                                  setting('UPGRADE_SKIP_DIRS', 'Discovery').split(',') if d.strip()]
         self.lossy_min_kbps = setting('LOSSY_MIN_BITRATE', 320, int)
         self.length_tol = setting('LENGTH_TOLERANCE', 3, int)
         self.sockseek_timeout_min = setting('SOCKSEEK_TIMEOUT_MINUTES', 150.0, float)
@@ -274,6 +279,12 @@ def run_sockseek(settings, csv_path, out_dir, index_path, extra):
 
 # --- upgrades ----------------------------------------------------------------
 
+def in_skip_dir(settings, song):
+    """True if the song is in a folder directly under /music that upgrades skip."""
+    path = str(song.get('path', ''))
+    return any(path.startswith(f'{MUSIC}/{d}/') for d in settings.upgrade_skip_dirs)
+
+
 def audio_length(path):
     import mutagen
     f = mutagen.File(path)
@@ -363,17 +374,20 @@ def run_once(settings, state):
 
         real = [s for s in library if str(s.get('path', '')).startswith(str(MUSIC) + '/')]
         # Count lossy songs from the whole library; upgrading needs the real path.
-        lossy_all = [s for s in library if (s.get('suffix') or '').lower() not in LOSSLESS]
-        lossy = [s for s in real if (s.get('suffix') or '').lower() not in LOSSLESS]
+        lossy_all = [s for s in library if (s.get('suffix') or '').lower() not in LOSSLESS
+                     and not in_skip_dir(settings, s)]
+        lossy = [s for s in real if (s.get('suffix') or '').lower() not in LOSSLESS
+                 and not in_skip_dir(settings, s)]
+        skipped = sum(1 for s in real if in_skip_dir(settings, s))
         if library and not real:
             report['warnings'].append('Navidrome is not reporting real file paths, so upgrades are off. '
                                       'In Navidrome: Settings > Players > music-sync > Report Real Path.')
         cutoff = (started - dt.timedelta(days=settings.upgrade_retry_days)).isoformat()
         attempts = state.setdefault('upgrade_attempts', {})
         due = [s for s in lossy if attempts.get(s['id'], '') < cutoff]
-        due.sort(key=lambda s: (s['id'] not in in_playlists, -(s.get('playCount') or 0), s.get('title', '')))
         # Sockseek needs the length to check it found the same recording.
         due = [s for s in due if float(s.get('duration') or 0) > 0]
+        due.sort(key=lambda s: (s['id'] not in in_playlists, -(s.get('playCount') or 0), s.get('title', '')))
         upgrades = due[:settings.upgrade_batch]
         upgrade_rows = [{'Artist': s.get('artist', ''), 'Title': s.get('title', ''), 'Album': s.get('album', ''),
                          'Length': int(round(float(s['duration']))), '_song': s} for s in upgrades]
@@ -382,6 +396,8 @@ def run_once(settings, state):
                    f'Playlist songs missing: {len(missing)}',
                    f'Upgrades this run: {len(upgrades)} of {len(lossy_all)} lossy' if real
                    else 'Upgrades this run: off (no real file paths)']
+        if skipped:
+            summary.append(f'Not upgraded ({", ".join(settings.upgrade_skip_dirs)}): {skipped} songs')
 
         if settings.dry_run:
             lines = [f'<b>Music sync (dry run)</b> · {started:%d %b %H:%M}'] + summary
@@ -486,7 +502,8 @@ def run_once(settings, state):
             summary[1] = f'Playlist songs missing: {len(missing_after)}'
         if changed:
             library = fetch_library(api)
-            lossy_now = [s for s in library if (s.get('suffix') or '').lower() not in LOSSLESS]
+            lossy_now = [s for s in library if (s.get('suffix') or '').lower() not in LOSSLESS
+                         and not in_skip_dir(settings, s)]
             summary[0] = f'Library: {len(library)} songs, {len(lossy_now)} lossy'
             summary[2] = f'Lossy songs left to upgrade: {len(lossy_now)}'
 
