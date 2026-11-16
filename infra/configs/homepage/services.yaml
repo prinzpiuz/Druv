@@ -153,6 +153,12 @@
         ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:4533
         server: druv-docker
         container: navidrome
+        widget:
+          type: navidrome
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:4533
+          user: "{{HOMEPAGE_VAR_NAVIDROME_USER}}"
+          token: "{{HOMEPAGE_VAR_NAVIDROME_TOKEN}}"
+          salt: "{{HOMEPAGE_VAR_NAVIDROME_SALT}}"
     - Soulbeet:
         icon: https://raw.githubusercontent.com/terry90/soulbeet/refs/tags/v0.8.0/ui/assets/logo.svg
         href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9765
@@ -165,6 +171,11 @@
         ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5030
         server: druv-docker
         container: slskd
+        widget:
+          type: slskd
+          url: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:5030
+          key: "{{HOMEPAGE_VAR_SLSKD_API_KEY}}"
+          fields: ["slskStatus", "downloads", "uploads", "sharedFiles"]
     - Prowlarr:
         icon: prowlarr.png
         href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9696
