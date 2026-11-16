@@ -5,7 +5,8 @@ Every SYNC_INTERVAL_HOURS:
   1. Read the library from Navidrome (Subsonic API).
   2. List the playlist songs Navidrome does not have ("missing"), and up to
      UPGRADE_BATCH songs it has only as lossy files ("upgrades"). Upgrades skip
-     UPGRADE_SKIP_DIRS (Soulbeet's Discovery folder).
+     UPGRADE_SKIP_DIRS (Soulbeet's Discovery folder) and take songs added in
+     the last NEW_SONG_DAYS first.
   3. Sockseek, FLAC only: missing songs into /music, upgrades into a staging
      folder.
   4. Sockseek, FLAC or >= LOSSY_MIN_BITRATE kbps: songs still missing.
@@ -86,6 +87,8 @@ class Settings:
         # songs are temporary: Soulbeet deletes or moves them after rating.
         self.upgrade_skip_dirs = [d.strip().strip('/') for d in
                                   setting('UPGRADE_SKIP_DIRS', 'Discovery').split(',') if d.strip()]
+        # Songs added to Navidrome in the last N days are upgraded first. 0 turns this off.
+        self.new_song_days = setting('NEW_SONG_DAYS', 14, int)
         self.lossy_min_kbps = setting('LOSSY_MIN_BITRATE', 320, int)
         self.length_tol = setting('LENGTH_TOLERANCE', 3, int)
         self.sockseek_timeout_min = setting('SOCKSEEK_TIMEOUT_MINUTES', 150.0, float)
@@ -285,6 +288,27 @@ def in_skip_dir(settings, song):
     return any(path.startswith(f'{MUSIC}/{d}/') for d in settings.upgrade_skip_dirs)
 
 
+def added_at(song):
+    """When Navidrome first saw the song (Subsonic 'created'), or None."""
+    try:
+        value = dt.datetime.fromisoformat(str(song.get('created', '')))
+    except ValueError:
+        return None
+    return value if value.tzinfo else value.replace(tzinfo=dt.timezone.utc)
+
+
+def order_upgrades(settings, due, in_playlists, now):
+    """New songs first (newest first), then playlist songs, then the most played."""
+    new_cutoff = now - dt.timedelta(days=settings.new_song_days)
+    new, rest = [], []
+    for s in due:
+        added = added_at(s)
+        (new if settings.new_song_days > 0 and added and added >= new_cutoff else rest).append(s)
+    new.sort(key=lambda s: added_at(s), reverse=True)
+    rest.sort(key=lambda s: (s['id'] not in in_playlists, -(s.get('playCount') or 0), s.get('title', '')))
+    return new + rest, len(new)
+
+
 def audio_length(path):
     import mutagen
     f = mutagen.File(path)
@@ -387,7 +411,7 @@ def run_once(settings, state):
         due = [s for s in lossy if attempts.get(s['id'], '') < cutoff]
         # Sockseek needs the length to check it found the same recording.
         due = [s for s in due if float(s.get('duration') or 0) > 0]
-        due.sort(key=lambda s: (s['id'] not in in_playlists, -(s.get('playCount') or 0), s.get('title', '')))
+        due, new_due = order_upgrades(settings, due, in_playlists, dt.datetime.now(dt.timezone.utc))
         upgrades = due[:settings.upgrade_batch]
         upgrade_rows = [{'Artist': s.get('artist', ''), 'Title': s.get('title', ''), 'Album': s.get('album', ''),
                          'Length': int(round(float(s['duration']))), '_song': s} for s in upgrades]
@@ -396,6 +420,8 @@ def run_once(settings, state):
                    f'Playlist songs missing: {len(missing)}',
                    f'Upgrades this run: {len(upgrades)} of {len(lossy_all)} lossy' if real
                    else 'Upgrades this run: off (no real file paths)']
+        if real and settings.new_song_days > 0:
+            summary.append(f'Added in the last {settings.new_song_days} days, upgraded first: {new_due}')
         if skipped:
             summary.append(f'Not upgraded ({", ".join(settings.upgrade_skip_dirs)}): {skipped} songs')
 

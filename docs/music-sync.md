@@ -121,7 +121,12 @@ flowchart TD
 1. **Lock.** One run at a time, including a manual `--once` run. Two Sockseek processes on one Soulseek account disconnect each other.
 2. **Read the library.** music-sync asks Navidrome for every song: title, artist, album, format, bitrate, length, play count and file path. The path is the real one only when **Report Real Path** is on for the `music-sync` player in Navidrome (Settings > Players).
 3. **Missing songs.** For each row in `/config/playlists/*.csv`, music-sync searches Navidrome with the same matching as the playlist builder: title first, then artist and album to choose between candidates. Rows with no confident match are missing. A song in several playlists counts once.
-4. **Upgrade candidates.** These are lossy songs (MP3, AAC, Ogg, Opus) with a known length and a real path, that were not tried in the last 7 days. Songs in `/music/Discovery/` are left out: Soulbeet keeps its Discovery songs there for a short time and then deletes them or moves them into the library. Songs in playlists come first, then the most played. A run takes up to 50.
+4. **Upgrade candidates.** These are lossy songs (MP3, AAC, Ogg, Opus) with a known length and a real path, that were not tried in the last 7 days. Songs in `/music/Discovery/` are left out: Soulbeet keeps its Discovery songs there for a short time and then deletes them or moves them into the library. The order is:
+   1. songs added to Navidrome in the last 14 days, newest first (Navidrome's `created` date);
+   2. songs in playlists;
+   3. the most played.
+
+   A run takes up to 50.
 5. **Dry run.** If `SYNC_DRY_RUN` is true, music-sync sends the lists to Telegram and stops here.
 6. **Free space.** No downloads when the music disk has less than 10 GB free.
 7. **Pass 1, missing songs in FLAC.** Index `index-missing-flac.csv`.
@@ -197,6 +202,7 @@ Set in `arr/docker-compose.yml` or the job's defaults (`music_sync.py`, class `S
 | `LOSSY_MIN_BITRATE` | `320` | Lowest bitrate the lossy pass accepts. |
 | `UPGRADE_RETRY_DAYS` | `7` | Wait before trying an upgrade again. |
 | `UPGRADE_SKIP_DIRS` | `Discovery` | Folders directly under `/music` that are never upgraded, comma separated. Only the top folder matches: `/music/Daft Punk/Discovery/` is still upgraded. |
+| `NEW_SONG_DAYS` | `14` | Songs added in this many days are upgraded first, newest first. `0` turns this off. |
 | `LENGTH_TOLERANCE` | `3` | Seconds an upgrade may differ from the old file. |
 | `SOCKSEEK_TIMEOUT_MINUTES` | `150` | Time limit for each Sockseek pass. |
 | `SOCKSEEK_CONCURRENT_JOBS` | `5` | Songs Sockseek works on at the same time. |
