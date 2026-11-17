@@ -85,6 +85,9 @@ class Settings:
         self.length_tol = setting('LENGTH_TOLERANCE', 3, int)
         self.sockseek_timeout_min = setting('SOCKSEEK_TIMEOUT_MINUTES', 150.0, float)
         self.concurrent_jobs = setting('SOCKSEEK_CONCURRENT_JOBS', 5, int)
+        # The VPN's forwarded port. Without one, peers behind a firewall cannot
+        # connect in, and their search results never arrive.
+        self.listen_port = setting('SOCKSEEK_LISTEN_PORT', 49998, int)
         self.min_free_gb = setting('MIN_FREE_GB', 10, int)
         self.daily_summary_hour = setting('DAILY_SUMMARY_HOUR', 9, int)
 
@@ -243,7 +246,8 @@ def run_sockseek(settings, csv_path, out_dir, index_path, extra):
     conf.chmod(0o600)
     cmd = [SOCKSEEK, str(csv_path), '-c', str(conf), '-o', str(out_dir), '--index-path', str(index_path),
            '--name-format', NAME_FORMAT, '--pref-format', 'flac', '--concurrent-jobs',
-           str(settings.concurrent_jobs), '--no-progress', '--log-file', str(CONFIG / 'sockseek.log')] + extra
+           str(settings.concurrent_jobs), '--listen-port', str(settings.listen_port),
+           '--no-progress', '--log-file', str(CONFIG / 'sockseek.log')] + extra
     log('Running: ' + ' '.join(c for c in cmd if c != str(conf)))
     _child = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     timed_out = threading.Event()
