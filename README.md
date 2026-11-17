@@ -77,7 +77,7 @@ From my homelab, I have made a few services available to the public under [prinz
 
 | Name | Description | Config |
 |------|-------------|--------|
-| [Gluetun](https://github.com/qdm12/gluetun) | VPN service for containers | /configs|
+| [Gluetun](https://github.com/qdm12/gluetun) | VPN service for containers (AirVPN, with forwarded ports: [docs/vpn.md](docs/vpn.md)) | /configs|
 | [qBittorrent](https://www.qbittorrent.org/) | Torrent client | /configs |
 | [Radarr](https://radarr.video/) | Movies automation | /configs |
 | [Sonarr](https://sonarr.tv/) | TV automation | /configs |

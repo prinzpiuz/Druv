@@ -5,3 +5,4 @@ Explanations of how parts of this homelab work and how to look after them. Setup
 | Page | About |
 |---|---|
 | [music-sync.md](music-sync.md) | How `music-sync` uses Sockseek to download missing songs and FLAC upgrades, how upgrades keep Navidrome history, its files and settings, and troubleshooting |
+| [vpn.md](vpn.md) | gluetun with AirVPN: why forwarded ports matter for Soulseek and BitTorrent, setup steps, and qBittorrent settings |

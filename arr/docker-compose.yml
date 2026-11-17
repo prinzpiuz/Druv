@@ -36,16 +36,21 @@ services:
       - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
       - VPN_TYPE=${VPN_TYPE}
       - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      # AirVPN WireGuard configs have a preshared key; leave it empty for Mullvad.
+      - WIREGUARD_PRESHARED_KEY=${WIREGUARD_PRESHARED_KEY:-}
+      # IPv4 only: IPv6 is turned off in this namespace (sysctls above).
       - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
-      - SERVER_CITIES=${SERVER_CITIES}
+      - SERVER_COUNTRIES=${SERVER_COUNTRIES:-}
+      - SERVER_CITIES=${SERVER_CITIES:-}
+      # AirVPN forwarded ports (airvpn.org/ports), opened on the tunnel so peers
+      # can connect in. Each app below listens on its own one.
+      - FIREWALL_VPN_INPUT_PORTS=${AIRVPN_PORT_QBITTORRENT:?set in .env},${AIRVPN_PORT_SLSKD:?set in .env},${AIRVPN_PORT_SOCKSEEK:?set in .env}
       - UPDATER_PERIOD=24h
       # Lets containers in this namespace (music-sync) reach homelab services.
       # Internet traffic still goes only through the tunnel.
       - FIREWALL_OUTBOUND_SUBNETS=172.18.0.0/24
     restart: always
     ports:
-      - 54509:54509
-      - 54509:54509/udp
       - 51820:51820
       - 51820:51820/udp
       - 8080:8080 # qbittorrent
@@ -218,6 +223,8 @@ services:
       - SLSKD_SLSK_USERNAME=${SLSKD_SLSK_USERNAME}
       - SLSKD_SLSK_PASSWORD=${SLSKD_SLSK_PASSWORD}
       - SLSKD_API_KEY=${SLSKD_API_KEY}
+      # Must be the AirVPN forwarded port, so peers can connect in.
+      - SLSKD_SLSK_LISTEN_PORT=${AIRVPN_PORT_SLSKD:?set in .env}
     volumes:
       - /configs/slskd:/app
       - /data/slskd/downloads:/app/downloads
@@ -290,6 +297,8 @@ services:
       - SYNC_INTERVAL_HOURS=6
       - UPGRADE_BATCH=${MUSIC_SYNC_UPGRADE_BATCH:-50}
       - LOSSY_MIN_BITRATE=320
+      # Must be the AirVPN forwarded port, so peers can connect in.
+      - SOCKSEEK_LISTEN_PORT=${AIRVPN_PORT_SOCKSEEK:?set in .env}
     volumes:
       - /configs/music-sync:/config
       - /data/media/music:/music
