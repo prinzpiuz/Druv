@@ -89,7 +89,7 @@ From my homelab, I have made a few services available to the public under [prinz
 | [Flaresolverr](https://github.com/FlareSolverr/FlareSolverr) | Captcha solver | /configs |
 | [SwurApp](https://github.com/OwlCaribou/swurApp) | Companion utility | /configs |
 | [Navidrome](https://www.navidrome.org/) | Music streaming server | /configs |
-| [slskd](https://github.com/slskd/slskd) | Soulseek client, runs through Gluetun | /configs |
+| [slskd](https://github.com/slskd/slskd) | Soulseek client, runs through Gluetun. Shares the music library read-only, except `Discovery/` | /configs |
 | [Soulbeet](https://github.com/terry90/soulbeet) | Music downloader and tagger (slskd + beets) | /configs |
 | [Feishin](https://github.com/jeffvli/feishin) | Web music player for Navidrome, at mplay.prinzpiuz.in | none |
 | navidrome-plugins | One-shot: installs the plugins in [plugins.txt](arr/navidrome/plugins.txt) | /configs |

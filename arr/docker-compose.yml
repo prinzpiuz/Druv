@@ -225,9 +225,19 @@ services:
       - SLSKD_API_KEY=${SLSKD_API_KEY}
       # Must be the AirVPN forwarded port, so peers can connect in.
       - SLSKD_SLSK_LISTEN_PORT=${AIRVPN_PORT_SLSKD:?set in .env}
+      # Share the library, without Soulbeet's temporary Discovery songs.
+      # Items are separated by ";". A shares: block in slskd.yml overrides this.
+      - SLSKD_SHARED_DIR=/music;!/music/Discovery
+      # Rescan once a day, so new songs and FLAC upgrades are shared.
+      - SLSKD_SHARE_CACHE_RETENTION=1440
+      - SLSKD_UPLOAD_SLOTS=${SLSKD_UPLOAD_SLOTS:-10}
+      # KiB/s. Keep it well under the home upload speed.
+      - SLSKD_UPLOAD_SPEED_LIMIT=${SLSKD_UPLOAD_SPEED_LIMIT:-2048}
     volumes:
       - /configs/slskd:/app
       - /data/slskd/downloads:/app/downloads
+      # Read-only: peers can download from the library, nothing can change it.
+      - /data/media/music:/music:ro
     network_mode: service:gluetun
     depends_on:
       gluetun:

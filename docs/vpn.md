@@ -52,6 +52,21 @@ gluetun opens all three on the tunnel with `FIREWALL_VPN_INPUT_PORTS`.
    - qBittorrent's status bar: the connection icon is green.
    - slskd web UI: searches return many more results.
 
+## Sharing the music library (slskd)
+
+Many Soulseek users refuse uploads to people who share nothing. slskd puts such users in its own `leechers` group too. So slskd shares the library:
+
+- `/data/media/music` is mounted read-only at `/music`. Peers see it as a folder named `music`, not the server path.
+- `/music/Discovery` is not shared. Soulbeet deletes or moves those songs soon after it downloads them.
+- slskd rescans the share once a day (`SLSKD_SHARE_CACHE_RETENTION=1440`), so new songs and FLAC upgrades appear within a day.
+- Uploads are limited by `SLSKD_UPLOAD_SLOTS` (default 10) and `SLSKD_UPLOAD_SPEED_LIMIT` (default 2048 KiB/s, about 16 Mbit/s) in `arr/.env`. Set the speed to about half of your home upload speed, so streaming from Navidrome stays smooth.
+
+The share settings come from the compose file. If `/configs/slskd/slskd.yml` has a `shares:` block that is not commented out, it overrides them. Remove that block.
+
+Check in the slskd web UI, under System > Shares: the share shows the file count after the first scan.
+
+Sharing copyrighted music is distribution. The VPN hides your home IP from peers, but it does not change the legal risk.
+
 ## Notes
 
 - One WireGuard key is one AirVPN device. Do not use the same key on a laptop at the same time.
