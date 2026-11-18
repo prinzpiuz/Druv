@@ -206,6 +206,7 @@ Set in `arr/docker-compose.yml` or the job's defaults (`music_sync.py`, class `S
 | `LENGTH_TOLERANCE` | `3` | Seconds an upgrade may differ from the old file. |
 | `SOCKSEEK_TIMEOUT_MINUTES` | `150` | Time limit for each Sockseek pass. |
 | `SOCKSEEK_CONCURRENT_JOBS` | `5` | Songs Sockseek works on at the same time. |
+| `SOCKSEEK_LISTEN_PORT` | `49998` | Port for incoming Soulseek connections. The compose file sets it to `AIRVPN_PORT_SOCKSEEK`, the VPN's forwarded port. See [vpn.md](vpn.md). |
 | `MIN_FREE_GB` | `10` | No downloads below this free space. |
 | `DAILY_SUMMARY_HOUR` | `9` | Hour after which the daily summary is sent. |
 
