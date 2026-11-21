@@ -193,6 +193,7 @@ Configure environment variables by copying and editing the env File as needed.
 | [BloTils](https://github.com/prinzpiuz/BloTils) | Blog Utilities |  /configs |
 | [SnapOtter](https://github.com/snapotter-hq/snapotter) | Image Tools |  /configs |
 | [PriceStalker](https://github.com/mikeknight85/PriceStalker) | Price Tracker |  /configs |
+| [linkding](https://github.com/sissbruecker/linkding) | Bookmark manager, at bookmarks.prinzpiuz.in. Moving from Raindrop: [tools/linkding](tools/linkding/README.md) |  /configs |
 
 
 
