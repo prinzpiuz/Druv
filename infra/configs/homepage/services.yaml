@@ -260,6 +260,12 @@
         ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:8088
         server: druv-docker
         container: pricestalker-frontend
+    - linkding:
+        icon: linkding.png
+        href: https://bookmarks.prinzpiuz.in
+        ping: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:9090
+        server: druv-docker
+        container: linkding
     - SnapOtter:
         icon: https://raw.githubusercontent.com/snapotter-hq/SnapOtter/refs/heads/main/branding/logo-512-on-dark.png
         href: http://{{HOMEPAGE_VAR_HOMELAB_IP}}:1349
