@@ -40,6 +40,7 @@ It prints the number of bookmarks written. Options:
 
 - `--skip-folder NAME` (repeatable): the named collections give no tag. The default is `Unsorted` and `Trash`.
 - `--extra-tags extra.csv`: adds tags to chosen bookmarks, for example ones with no tags. The CSV has the columns `url` and `tags`, with the tags in quotes and separated by commas. Other columns are ignored.
+- `--tag-map merges.csv`: renames and merges tags, to fix typos and duplicates. The CSV has the columns `old` and `new`. `new` can list several tags, in quotes and separated by commas, to split a tag: `python-numpy` becomes `python,numpy`. Other columns are ignored.
 
 ### 4. Import
 

@@ -14,6 +14,11 @@ Usage:
 --extra-tags reads a CSV with the columns url and tags (tags separated by
 commas, in quotes) and adds those tags to the bookmarks with that URL.
 
+--tag-map reads a CSV with the columns old and new and renames tags: every
+tag "old" becomes the tags in "new" (one or more, separated by commas, in
+quotes). Use it to merge duplicates and fix typos. It runs last, on the
+cleaned tag names.
+
 Only the Python standard library is used.
 """
 import argparse
@@ -89,8 +94,17 @@ def read_extra_tags(path):
     return extra
 
 
-def convert(bookmarks, skip, extra=None):
+def read_tag_map(path):
+    mapping = {}
+    with open(path, encoding='utf-8', newline='') as f:
+        for row in csv.DictReader(f):
+            mapping[tag_name(row['old'])] = [tag_name(t) for t in row['new'].split(',') if t.strip()]
+    return mapping
+
+
+def convert(bookmarks, skip, extra=None, tag_map=None):
     extra = extra or {}
+    tag_map = tag_map or {}
     skip = {s.lower() for s in skip}
     out = ['<!DOCTYPE NETSCAPE-Bookmark-file-1>',
            '<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">',
@@ -104,6 +118,7 @@ def convert(bookmarks, skip, extra=None):
         tags = [tag_name(f) for f in b['folders'] if f.lower() not in skip]
         tags += [tag_name(t) for t in a.get('tags', '').split(',') if t.strip()]
         tags += [tag_name(t) for t in extra.get(a['href'], [])]
+        tags = [new for t in tags for new in tag_map.get(t, [t])]
         tags = sorted(set(t for t in tags if t))
         fields = [f'HREF="{html.escape(a["href"])}"']
         for key in ('add_date', 'last_modified'):
@@ -126,6 +141,7 @@ def main():
                     help=f'collection that gives no tag (repeatable; default: {", ".join(DEFAULT_SKIP)}). '
                          'Bookmarks in Trash are left out.')
     ap.add_argument('--extra-tags', metavar='CSV', help='CSV with columns url,tags: tags to add to those bookmarks')
+    ap.add_argument('--tag-map', metavar='CSV', help='CSV with columns old,new: rename or merge tags')
     args = ap.parse_args()
     parser = RaindropParser()
     with open(args.source, encoding='utf-8') as f:
@@ -134,7 +150,8 @@ def main():
     unknown = set(extra) - {b['attrs']['href'] for b in parser.bookmarks}
     if unknown:
         print(f'warning: {len(unknown)} URLs in {args.extra_tags} are not in the export', file=sys.stderr)
-    text, skipped = convert(parser.bookmarks, args.skip_folder or DEFAULT_SKIP, extra)
+    tag_map = read_tag_map(args.tag_map) if args.tag_map else {}
+    text, skipped = convert(parser.bookmarks, args.skip_folder or DEFAULT_SKIP, extra, tag_map)
     with open(args.target, 'w', encoding='utf-8') as f:
         f.write(text)
     folders = {'/'.join(b['folders']) for b in parser.bookmarks
