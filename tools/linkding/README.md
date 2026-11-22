@@ -36,7 +36,10 @@ In the Raindrop web app: Settings > Backups > Create new. Raindrop emails you wh
 python3 tools/linkding/raindrop_to_linkding.py ~/Downloads/raindrop.html ~/Downloads/linkding.html
 ```
 
-It prints the number of bookmarks written. `--skip-folder NAME` (repeatable) gives the named collections no tag. The default is `Unsorted` and `Trash`.
+It prints the number of bookmarks written. Options:
+
+- `--skip-folder NAME` (repeatable): the named collections give no tag. The default is `Unsorted` and `Trash`.
+- `--extra-tags extra.csv`: adds tags to chosen bookmarks, for example ones with no tags. The CSV has the columns `url` and `tags`, with the tags in quotes and separated by commas. Other columns are ignored.
 
 ### 4. Import
 

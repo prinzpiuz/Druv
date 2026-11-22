@@ -9,11 +9,17 @@ and "python", plus any tags it already had in Raindrop.
 Usage:
     python3 raindrop_to_linkding.py raindrop.html linkding.html
     python3 raindrop_to_linkding.py raindrop.html linkding.html --skip-folder Unsorted
+    python3 raindrop_to_linkding.py raindrop.html linkding.html --extra-tags extra.csv
+
+--extra-tags reads a CSV with the columns url and tags (tags separated by
+commas, in quotes) and adds those tags to the bookmarks with that URL.
 
 Only the Python standard library is used.
 """
 import argparse
+import csv
 import html
+import re
 import sys
 from html.parser import HTMLParser
 
@@ -21,8 +27,9 @@ DEFAULT_SKIP = ['Unsorted', 'Trash']
 
 
 def tag_name(name):
-    """linkding tags cannot contain spaces or commas."""
-    return '-'.join(name.replace(',', ' ').split()).lower()
+    """linkding tags cannot contain spaces or commas. Other punctuation such as
+    "&" is dropped too, so "HTML & CSS" becomes "html-css"."""
+    return '-'.join(re.sub(r'[^\w+#.-]', ' ', name).split()).lower()
 
 
 class RaindropParser(HTMLParser):
@@ -74,7 +81,16 @@ class RaindropParser(HTMLParser):
             self.current['desc'] += data
 
 
-def convert(bookmarks, skip):
+def read_extra_tags(path):
+    extra = {}
+    with open(path, encoding='utf-8', newline='') as f:
+        for row in csv.DictReader(f):
+            extra.setdefault(row['url'].strip(), []).extend(t for t in row['tags'].split(',') if t.strip())
+    return extra
+
+
+def convert(bookmarks, skip, extra=None):
+    extra = extra or {}
     skip = {s.lower() for s in skip}
     out = ['<!DOCTYPE NETSCAPE-Bookmark-file-1>',
            '<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">',
@@ -87,6 +103,7 @@ def convert(bookmarks, skip):
             continue
         tags = [tag_name(f) for f in b['folders'] if f.lower() not in skip]
         tags += [tag_name(t) for t in a.get('tags', '').split(',') if t.strip()]
+        tags += [tag_name(t) for t in extra.get(a['href'], [])]
         tags = sorted(set(t for t in tags if t))
         fields = [f'HREF="{html.escape(a["href"])}"']
         for key in ('add_date', 'last_modified'):
@@ -108,11 +125,16 @@ def main():
     ap.add_argument('--skip-folder', action='append', default=None,
                     help=f'collection that gives no tag (repeatable; default: {", ".join(DEFAULT_SKIP)}). '
                          'Bookmarks in Trash are left out.')
+    ap.add_argument('--extra-tags', metavar='CSV', help='CSV with columns url,tags: tags to add to those bookmarks')
     args = ap.parse_args()
     parser = RaindropParser()
     with open(args.source, encoding='utf-8') as f:
         parser.feed(f.read())
-    text, skipped = convert(parser.bookmarks, args.skip_folder or DEFAULT_SKIP)
+    extra = read_extra_tags(args.extra_tags) if args.extra_tags else {}
+    unknown = set(extra) - {b['attrs']['href'] for b in parser.bookmarks}
+    if unknown:
+        print(f'warning: {len(unknown)} URLs in {args.extra_tags} are not in the export', file=sys.stderr)
+    text, skipped = convert(parser.bookmarks, args.skip_folder or DEFAULT_SKIP, extra)
     with open(args.target, 'w', encoding='utf-8') as f:
         f.write(text)
     folders = {'/'.join(b['folders']) for b in parser.bookmarks
