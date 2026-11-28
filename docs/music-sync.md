@@ -14,11 +14,12 @@ This page explains how the `music-sync` service finds and downloads music, and h
 4. [One music-sync run](#one-music-sync-run)
 5. [How an upgrade keeps Navidrome history](#how-an-upgrade-keeps-navidrome-history)
 6. [YouTube Music likes](#youtube-music-likes)
-7. [Songs you delete](#songs-you-delete)
-8. [Files and folders](#files-and-folders)
-9. [Settings](#settings)
-10. [Common tasks](#common-tasks)
-11. [Troubleshooting](#troubleshooting)
+7. [Delete and Wrong playlists](#delete-and-wrong-playlists)
+8. [Songs you delete](#songs-you-delete)
+9. [Files and folders](#files-and-folders)
+10. [Settings](#settings)
+11. [Common tasks](#common-tasks)
+12. [Troubleshooting](#troubleshooting)
 
 ## What each part does
 
@@ -197,9 +198,25 @@ music-sync adds the songs you like in YouTube Music to the playlist `Liked`. Fro
 
 To turn the likes off, delete `ytmusic-browser.json`.
 
+## Delete and Wrong playlists
+
+Navidrome cannot delete files: its library mount is read-only on purpose. Instead, add a song to one of two playlists, from the Navidrome web UI, Feishin, or any app that edits playlists. music-sync creates both playlists, empty, on its first check. It checks them every `MARKS_INTERVAL_MINUTES` (5) and at the start of each run. A check never runs during a download: they share the run lock.
+
+| Playlist | Use it when | What music-sync does |
+|---|---|---|
+| `Delete` | You do not want the song at all. | Moves the file, its `.lrc`, and the album folder if no audio is left in it, to `/data/music-retired/deleted/<same path>`. Adds the song to `deleted.csv`, so no playlist or like downloads it again. |
+| `Wrong` | The file is the wrong song or version, and you want the right one. | Moves the file to `/data/music-retired/wrong/<same path>`. Searches again for the same playlist row, with an exact title and length, **without the Soulseek user who sent the wrong file**. A result with the same size as a wrong file (the same rip from another user) is put aside too, and that user is skipped as well. Up to `WRONG_MAX_TRIES` (3) searches per run. If nothing is found, it tries again on each 6-hour run. |
+
+In both cases the song leaves the playlist, and its entry in Navidrome's Settings > Missing Files is removed after a scan. Telegram lists what happened.
+
+- **Who sent a file:** music-sync reads it from `sockseek.log` after each Sockseek run and keeps it in `sources.csv`. Files from before this feature, or from Soulbeet, have no sender: Wrong then skips only files of the same size.
+- **Undo:** move the file back from `/data/music-retired/deleted/` (and remove its line from `deleted.csv`) or from `/data/music-retired/wrong/`.
+- **Only real paths inside `/music`.** If Navidrome does not report real paths for the `music-sync` player, the song stays in the playlist and the report says why.
+- `SYNC_DRY_RUN=true` turns both playlists off.
+
 ## Songs you delete
 
-A playlist song that was in the library on the last run and is gone now was deleted by you. music-sync writes it to `/configs/music-sync/deleted.csv` and does not download it again, even if it is still in a playlist or still liked. The report lists it under "Deleted by you".
+The easy way is the [`Delete` playlist](#delete-and-wrong-playlists). Deleting a file by hand works too: a playlist song that was in the library on the last run and is gone now was deleted by you. music-sync writes it to `/configs/music-sync/deleted.csv` and does not download it again, even if it is still in a playlist or still liked. The report lists it under "Deleted by you".
 
 - **To get a song back:** remove its line from `deleted.csv`. The next run downloads it.
 - **Safety check:** if many songs vanish at once (more than 5, and more than 10% of the playlist songs) or the library shrinks by more than 10%, this is more likely a disk or scan problem than you. music-sync then marks nothing, downloads none of them, and sends a warning. When the disk is back, the songs are found again and nothing changes.
@@ -215,6 +232,8 @@ A playlist song that was in the library on the last run and is gone now was dele
 | `/configs/music-sync/state.json` | `/config/` | When each upgrade was last tried, counts for the daily summary, and which playlist songs were in the library on the last run. |
 | `/configs/music-sync/ytmusic-browser.json` | `/config/` | YouTube Music sign-in for the likes. A secret. See [YouTube Music likes](#youtube-music-likes). |
 | `/configs/music-sync/deleted.csv` | `/config/` | Songs you deleted by hand, never downloaded again. Columns: `Artist, Title, Album, Deleted`. |
+| `/configs/music-sync/sources.csv` | `/config/` | Which Soulseek user sent each downloaded file, read from `sockseek.log`. Used by the `Wrong` playlist. `sources.offset` is how far the log has been read. |
+| `/data/music-retired/deleted/`, `/data/music-retired/wrong/` | `/retired/` | Files from the `Delete` and `Wrong` playlists, at their old paths. Delete them yourself when you are sure. |
 | `/configs/music-sync/sockseek.log` | `/config/` | Sockseek's detailed log: every search, result and failure. |
 | `/configs/music-sync/run/` | `/config/run/` | The CSVs given to Sockseek in the last run. |
 | `/data/media/music/` | `/music/` | The library. New songs go in as `Album Artist/Album/Title`. |
@@ -254,6 +273,10 @@ Set in `arr/docker-compose.yml` or the job's defaults (`music_sync.py`, class `S
 | `YTM_AUTH_FILE` | `/config/ytmusic-browser.json` | YouTube Music sign-in. The likes are off while this file does not exist. |
 | `YTM_LIKES_PLAYLIST` | `Liked` | Playlist (CSV and Navidrome) for the likes. |
 | `YTM_LIKES_RECENT` | `200` | After the first run, how many of the newest likes to read. |
+| `DELETE_PLAYLIST` | `Delete` | Navidrome playlist for songs to delete. |
+| `WRONG_PLAYLIST` | `Wrong` | Navidrome playlist for wrong downloads to replace. |
+| `MARKS_INTERVAL_MINUTES` | `5` | How often the two playlists are checked between runs. `0` checks them only at the start of each run. |
+| `WRONG_MAX_TRIES` | `3` | Searches per Wrong song per run. |
 
 After a change to `arr/.env` or the compose file, recreate the container:
 
@@ -304,6 +327,8 @@ The build fails if the tag and commit do not match. Check that the options music
 
 | What you see | Cause | Fix |
 |---|---|---|
+| A song stays in the `Delete` or `Wrong` playlist: "no real path inside /music" | Navidrome does not send real paths to music-sync. | Navidrome > Settings > Players > `music-sync` > turn on Report Real Path. |
+| Report: "No other source yet" for a Wrong song | No other Soulseek user has a matching file now. | Nothing: it is tried again each run. To stop, add the row's song to `Delete`, or remove it from `state.json` under `wrong`. |
 | Report: "YouTube Music likes not read" | The YouTube Music sign-in expired, you signed out in that browser, or YouTube Music changed. | Make a new `ytmusic-browser.json` ([set up](#youtube-music-likes)). If that does not help, a newer `YTMUSICAPI_VERSION` in `version.env` may. |
 | Report: "N playlist songs vanished from the library at once" | Many songs disappeared in one run. | Check the music disk and `docker logs navidrome`. If you deleted them on purpose, run with `--accept-deletions`. |
 | Report: "Navidrome is not reporting real file paths, so upgrades are off" | Report Real Path is off for the `music-sync` player. The player appears in Navidrome after the first run. | Navidrome: Settings > Players > music-sync > Report Real Path. |

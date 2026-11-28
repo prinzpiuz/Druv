@@ -28,7 +28,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir "mutagen==${MUTAGEN_VERSION}" "ytmusicapi==${YTMUSICAPI_VERSION}"
 COPY --from=sockseek /out/sockseek /usr/local/bin/sockseek
-COPY music_sync.py navidrome_playlists.py ytm_likes.py /app/
+COPY music_sync.py navidrome_playlists.py ytm_likes.py marks.py /app/
 ENV PYTHONUNBUFFERED=1 HOME=/tmp
 USER 1000:1000
 ENTRYPOINT ["/usr/bin/tini", "--", "python3", "/app/music_sync.py"]
