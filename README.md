@@ -93,7 +93,7 @@ From my homelab, I have made a few services available to the public under [prinz
 | [Soulbeet](https://github.com/terry90/soulbeet) | Music downloader and tagger (slskd + beets) | /configs |
 | [Feishin](https://github.com/jeffvli/feishin) | Web music player for Navidrome, at mplay.prinzpiuz.in | none |
 | navidrome-plugins | One-shot: installs the plugins in [plugins.txt](arr/navidrome/plugins.txt) | /configs |
-| [music-sync](arr/music-sync/) | Every 6 h: downloads missing playlist songs and FLAC upgrades through Soulseek, reports to Telegram | /configs |
+| [music-sync](arr/music-sync/) | Every 6 h: adds new YouTube Music likes to a `Liked` playlist, downloads missing playlist songs and FLAC upgrades through Soulseek, reports to Telegram | /configs |
 
 **Navidrome plugins** are listed in [`arr/navidrome/plugins.txt`](arr/navidrome/plugins.txt), pinned to a release and a sha256. The `navidrome-plugins` container installs that list before Navidrome starts and removes plugins taken off the list. To add one, run `./scripts/navidrome-plugins.sh add <repo-url> <tag>` on the server, commit the changed `plugins.txt`, then enable the plugin in Navidrome's admin UI. `./scripts/navidrome-plugins.sh check` lists plugins with a newer release.
 
@@ -104,6 +104,7 @@ From my homelab, I have made a few services available to the public under [prinz
 4. scans, rebuilds the playlists and reports to the ops Telegram chat.
 
 It starts in dry-run mode (`MUSIC_SYNC_DRY_RUN=true` in `arr/.env`). Logs: `docker logs music-sync`. Run it once now: `docker exec music-sync python3 /app/music_sync.py --once`.
+Songs you like in YouTube Music are added to the `Liked` playlist after a one-time sign-in setup. Songs you delete by hand are not downloaded again.
 How it works, its files and settings, and troubleshooting: [docs/music-sync.md](docs/music-sync.md).
 
 ---
