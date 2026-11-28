@@ -13,10 +13,12 @@ This page explains how the `music-sync` service finds and downloads music, and h
 3. [How Sockseek skips songs](#how-sockseek-skips-songs)
 4. [One music-sync run](#one-music-sync-run)
 5. [How an upgrade keeps Navidrome history](#how-an-upgrade-keeps-navidrome-history)
-6. [Files and folders](#files-and-folders)
-7. [Settings](#settings)
-8. [Common tasks](#common-tasks)
-9. [Troubleshooting](#troubleshooting)
+6. [YouTube Music likes](#youtube-music-likes)
+7. [Songs you delete](#songs-you-delete)
+8. [Files and folders](#files-and-folders)
+9. [Settings](#settings)
+10. [Common tasks](#common-tasks)
+11. [Troubleshooting](#troubleshooting)
 
 ## What each part does
 
@@ -100,8 +102,10 @@ The upgrade pass does not use `--skip-music-dir`, because the song is in the lib
 flowchart TD
     A[Start: every 6 h, or --once] --> L{Another run active?}
     L -- yes --> Z[Skip this run]
-    L -- no --> B[Read the library from Navidrome]
+    L -- no --> Y[Add new YouTube Music likes to Liked.csv]
+    Y --> B[Read the library from Navidrome]
     B --> C[Compare the playlist CSVs with the library]
+    C --> X[Songs gone since the last run: deleted by you, never downloaded again]
     C --> D[missing: playlist songs not in Navidrome]
     C --> E[upgrades: up to 50 lossy songs]
     D --> DR{Dry run?}
@@ -119,22 +123,23 @@ flowchart TD
 ### Step by step
 
 1. **Lock.** One run at a time, including a manual `--once` run. Two Sockseek processes on one Soulseek account disconnect each other.
-2. **Read the library.** music-sync asks Navidrome for every song: title, artist, album, format, bitrate, length, play count and file path. The path is the real one only when **Report Real Path** is on for the `music-sync` player in Navidrome (Settings > Players).
-3. **Missing songs.** For each row in `/config/playlists/*.csv`, music-sync searches Navidrome with the same matching as the playlist builder: title first, then artist and album to choose between candidates. Rows with no confident match are missing. A song in several playlists counts once.
-4. **Upgrade candidates.** These are lossy songs (MP3, AAC, Ogg, Opus) with a known length and a real path, that were not tried in the last 7 days. Songs in `/music/Discovery/` are left out: Soulbeet keeps its Discovery songs there for a short time and then deletes them or moves them into the library. The order is:
+2. **YouTube Music likes.** If `ytmusic-browser.json` exists, new likes are added to the top of `playlists/Liked.csv`. See [YouTube Music likes](#youtube-music-likes).
+3. **Read the library.** music-sync asks Navidrome for every song: title, artist, album, format, bitrate, length, play count and file path. The path is the real one only when **Report Real Path** is on for the `music-sync` player in Navidrome (Settings > Players).
+4. **Missing songs.** For each row in `/config/playlists/*.csv`, music-sync searches Navidrome with the same matching as the playlist builder: title first, then artist and album to choose between candidates. Rows with no confident match are missing. A song in several playlists counts once. Songs in `deleted.csv` are left out, and so are songs that were in the library on the last run: see [Songs you delete](#songs-you-delete).
+5. **Upgrade candidates.** These are lossy songs (MP3, AAC, Ogg, Opus) with a known length and a real path, that were not tried in the last 7 days. Songs in `/music/Discovery/` are left out: Soulbeet keeps its Discovery songs there for a short time and then deletes them or moves them into the library. The order is:
    1. songs added to Navidrome in the last 14 days, newest first (Navidrome's `created` date);
    2. songs in playlists;
    3. the most played.
 
    A run takes up to 50.
-5. **Dry run.** If `SYNC_DRY_RUN` is true, music-sync sends the lists to Telegram and stops here.
-6. **Free space.** No downloads when the music disk has less than 10 GB free.
-7. **Pass 1, missing songs in FLAC.** Index `index-missing-flac.csv`.
-8. **Pass 2, still-missing songs in FLAC or ≥ 320 kbps.** Index `index-missing-any.csv`. FLAC still ranks first.
-9. **Pass 3, upgrades in FLAC,** into `/music/.music-sync-staging`. Index `index-upgrades.csv`.
-10. **Swap in upgrades.** See the next section.
-11. **Scan and playlists.** If anything changed, music-sync starts a Navidrome scan and waits up to 30 minutes for it to finish. Then it rebuilds each playlist in CSV order.
-12. **Report.** See [Telegram reports](#telegram-reports).
+6. **Dry run.** If `SYNC_DRY_RUN` is true, music-sync sends the lists to Telegram and stops here.
+7. **Free space.** No downloads when the music disk has less than 10 GB free.
+8. **Pass 1, missing songs in FLAC.** Index `index-missing-flac.csv`.
+9. **Pass 2, still-missing songs in FLAC or ≥ 320 kbps.** Index `index-missing-any.csv`. FLAC still ranks first.
+10. **Pass 3, upgrades in FLAC,** into `/music/.music-sync-staging`. Index `index-upgrades.csv`.
+11. **Swap in upgrades.** See the next section.
+12. **Scan and playlists.** If anything changed, music-sync starts a Navidrome scan and waits up to 30 minutes for it to finish. Then it rebuilds each playlist in CSV order.
+13. **Report.** See [Telegram reports](#telegram-reports).
 
 Each Sockseek pass is stopped after 150 minutes, so a run always ends before the next one is due.
 
@@ -166,13 +171,50 @@ A FLAC that fails a check stays in the staging folder and is listed in the repor
 
 What this does not catch: a "fake FLAC", an MP3 re-saved as FLAC. It has FLAC's file size but MP3's sound. Detecting it needs audio analysis.
 
+## YouTube Music likes
+
+music-sync adds the songs you like in YouTube Music to the playlist `Liked`. From there they are like any other playlist song: downloaded as FLAC or 320 kbps, upgraded later, and kept in the Navidrome playlist `Liked`.
+
+- It reads YouTube Music's own "Liked music" list with [ytmusicapi](https://github.com/sigma67/ytmusicapi) (pinned in `version.env`). That list has songs only, with clean title, artists and album.
+- The first run reads every like. Later runs read the newest `YTM_LIKES_RECENT` (200).
+- New likes go at the top of `/configs/music-sync/playlists/Liked.csv`. **Nothing is removed**: unliking a song does not change the playlist or the file. To get rid of a song, delete its file (see [Songs you delete](#songs-you-delete)).
+- ytmusicapi is not an official API. If YouTube Music changes, or the sign-in expires, the report says "YouTube Music likes not read". The rest of the run goes on with the last `Liked.csv`.
+
+**Set up (once).** ytmusicapi signs in with a copy of your browser's request headers. They stay valid as long as that browser session, about 2 years unless you sign out of YouTube Music in that browser.
+
+1. In Firefox, open https://music.youtube.com and sign in. Open the developer tools (Ctrl+Shift+I) > Network. Type `browse` in the filter box, then click Library in YouTube Music.
+2. Right-click a `POST` request to `browse?...` with status 200 > Copy > Copy Request Headers. (Chrome: click the request, and copy everything in "Request Headers" from `accept: */*` to the end.)
+3. On the server:
+
+   ```bash
+   docker exec -it music-sync ytmusicapi browser --file /config/ytmusic-browser.json
+   ```
+
+   Paste the headers, then press Enter and Ctrl+D.
+4. Check it: `docker exec music-sync python3 /app/music_sync.py --once`. The report has "YouTube Music likes: N new".
+
+`ytmusic-browser.json` holds your YouTube sign-in cookie. Treat it like a password. It is in `/configs/music-sync/`, which is not in the repo. Backrest backs it up.
+
+To turn the likes off, delete `ytmusic-browser.json`.
+
+## Songs you delete
+
+A playlist song that was in the library on the last run and is gone now was deleted by you. music-sync writes it to `/configs/music-sync/deleted.csv` and does not download it again, even if it is still in a playlist or still liked. The report lists it under "Deleted by you".
+
+- **To get a song back:** remove its line from `deleted.csv`. The next run downloads it.
+- **Safety check:** if many songs vanish at once (more than 5, and more than 10% of the playlist songs) or the library shrinks by more than 10%, this is more likely a disk or scan problem than you. music-sync then marks nothing, downloads none of them, and sends a warning. When the disk is back, the songs are found again and nothing changes.
+- **If you did delete many on purpose:** `docker exec music-sync python3 /app/music_sync.py --once --accept-deletions`.
+- Songs that were never in the library are not affected: they are missing, and music-sync keeps looking for them.
+
 ## Files and folders
 
 | On the host | In the container | What it is |
 |---|---|---|
 | `/configs/music-sync/playlists/*.csv` | `/config/playlists/` | The playlists to keep in step. One CSV per playlist; the file name is the Navidrome playlist name. Not in the repo, because the repo is public. |
 | `/configs/music-sync/index-*.csv` | `/config/` | Sockseek's index for each pass. Columns: `filepath, artist, album, title, length, tracktype, state, failurereason`. `state` 1 = downloaded, 2 = failed, 3 = already existed. |
-| `/configs/music-sync/state.json` | `/config/` | When each upgrade was last tried, and counts for the daily summary. |
+| `/configs/music-sync/state.json` | `/config/` | When each upgrade was last tried, counts for the daily summary, and which playlist songs were in the library on the last run. |
+| `/configs/music-sync/ytmusic-browser.json` | `/config/` | YouTube Music sign-in for the likes. A secret. See [YouTube Music likes](#youtube-music-likes). |
+| `/configs/music-sync/deleted.csv` | `/config/` | Songs you deleted by hand, never downloaded again. Columns: `Artist, Title, Album, Deleted`. |
 | `/configs/music-sync/sockseek.log` | `/config/` | Sockseek's detailed log: every search, result and failure. |
 | `/configs/music-sync/run/` | `/config/run/` | The CSVs given to Sockseek in the last run. |
 | `/data/media/music/` | `/music/` | The library. New songs go in as `Album Artist/Album/Title`. |
@@ -209,6 +251,9 @@ Set in `arr/docker-compose.yml` or the job's defaults (`music_sync.py`, class `S
 | `SOCKSEEK_LISTEN_PORT` | `49998` | Port for incoming Soulseek connections. The compose file sets it to `AIRVPN_PORT_SOCKSEEK`, the VPN's forwarded port. See [vpn.md](vpn.md). |
 | `MIN_FREE_GB` | `10` | No downloads below this free space. |
 | `DAILY_SUMMARY_HOUR` | `9` | Hour after which the daily summary is sent. |
+| `YTM_AUTH_FILE` | `/config/ytmusic-browser.json` | YouTube Music sign-in. The likes are off while this file does not exist. |
+| `YTM_LIKES_PLAYLIST` | `Liked` | Playlist (CSV and Navidrome) for the likes. |
+| `YTM_LIKES_RECENT` | `200` | After the first run, how many of the newest likes to read. |
 
 After a change to `arr/.env` or the compose file, recreate the container:
 
@@ -259,6 +304,8 @@ The build fails if the tag and commit do not match. Check that the options music
 
 | What you see | Cause | Fix |
 |---|---|---|
+| Report: "YouTube Music likes not read" | The YouTube Music sign-in expired, you signed out in that browser, or YouTube Music changed. | Make a new `ytmusic-browser.json` ([set up](#youtube-music-likes)). If that does not help, a newer `YTMUSICAPI_VERSION` in `version.env` may. |
+| Report: "N playlist songs vanished from the library at once" | Many songs disappeared in one run. | Check the music disk and `docker logs navidrome`. If you deleted them on purpose, run with `--accept-deletions`. |
 | Report: "Navidrome is not reporting real file paths, so upgrades are off" | Report Real Path is off for the `music-sync` player. The player appears in Navidrome after the first run. | Navidrome: Settings > Players > music-sync > Report Real Path. |
 | Report: "Music sync failed while reading the library", with "Wrong username or password" | Wrong `MUSIC_SYNC_NAVIDROME_*` values. | Fix `arr/.env`, recreate the container. |
 | Report: failed with a connection error | gluetun is down, or `FIREWALL_OUTBOUND_SUBNETS` is missing, or Navidrome's fixed IP changed. | `docker ps` for gluetun and navidrome; check the gluetun environment in the compose file. |

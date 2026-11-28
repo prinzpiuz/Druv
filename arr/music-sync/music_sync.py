@@ -16,6 +16,14 @@ Every SYNC_INTERVAL_HOURS:
   6. Ask Navidrome to scan, wait, rebuild the playlists.
   7. Report to Telegram.
 
+Before step 1, if YTM_AUTH_FILE exists, new YouTube Music likes are added to
+the playlist CSV YTM_LIKES_PLAYLIST (ytm_likes.py). Songs are never removed.
+
+A playlist song that was in the library on the last run and is gone now was
+deleted by hand. It is written to deleted.csv and never downloaded again.
+If many songs vanish at once (a disk or scan problem, not a person), nothing
+is marked and a warning is sent; --accept-deletions marks them anyway.
+
 SYNC_DRY_RUN=true (the default) does steps 1-2 and reports what it would do.
 Run once and exit: music_sync.py --once
 """
@@ -37,6 +45,7 @@ import urllib.request
 from pathlib import Path
 
 import navidrome_playlists as matcher
+import ytm_likes
 
 CONFIG = Path(os.environ.get('MUSIC_SYNC_CONFIG', '/config'))
 MUSIC = Path(os.environ.get('MUSIC_SYNC_MUSIC', '/music'))
@@ -98,6 +107,11 @@ class Settings:
         self.listen_port = setting('SOCKSEEK_LISTEN_PORT', 49998, int)
         self.min_free_gb = setting('MIN_FREE_GB', 10, int)
         self.daily_summary_hour = setting('DAILY_SUMMARY_HOUR', 9, int)
+        # YouTube Music likes. Off while the auth file does not exist.
+        self.ytm_auth_file = setting('YTM_AUTH_FILE', str(CONFIG / 'ytmusic-browser.json'))
+        self.ytm_playlist = setting('YTM_LIKES_PLAYLIST', 'Liked')
+        # After the first run, read only this many of the newest likes.
+        self.ytm_recent = setting('YTM_LIKES_RECENT', 200, int)
 
 
 def log(msg):
@@ -176,20 +190,56 @@ def row_key(row):
 
 
 def check_playlists(api, playlists):
-    """Returns (missing rows, ids of matched songs, {playlist: [song ids]})."""
-    missing, matched_ids, per_list = {}, set(), {}
+    """Returns (missing rows, ids of matched songs, {playlist: [song ids]},
+    keys of the rows found in the library)."""
+    missing, matched_ids, per_list, present = {}, set(), {}, set()
     for name, rows in playlists.items():
         ids = []
         for row in rows:
             song, _ = matcher.find(api, row, 0.8)
             if song:
                 matched_ids.add(song['id'])
+                present.add(row_key(row))
                 if song['id'] not in ids:
                     ids.append(song['id'])
             else:
                 missing.setdefault(row_key(row), row)
         per_list[name] = ids
-    return list(missing.values()), matched_ids, per_list
+    return list(missing.values()), matched_ids, per_list, present
+
+
+# --- songs deleted by hand ---------------------------------------------------
+
+DELETED_FIELDS = ['Artist', 'Title', 'Album', 'Deleted']
+
+
+def load_deleted():
+    path = CONFIG / 'deleted.csv'
+    if not path.exists():
+        return set()
+    with path.open(encoding='utf-8', newline='') as f:
+        return {row_key(r) for r in csv.DictReader(f) if r.get('Title')}
+
+
+def add_deleted(rows, when):
+    path = CONFIG / 'deleted.csv'
+    new = not path.exists()
+    with path.open('a', encoding='utf-8', newline='') as f:
+        w = csv.DictWriter(f, fieldnames=DELETED_FIELDS, extrasaction='ignore')
+        if new:
+            w.writeheader()
+        w.writerows(dict(r, Deleted=when) for r in rows)
+
+
+def split_vanished(missing, prev_present, library_size, prev_library_size, accept):
+    """Splits missing rows into (still to download, vanished, looks_safe).
+    Vanished rows were in the library on the last run. looks_safe is False
+    when too many vanished at once or the library shrank by more than 10%."""
+    vanished = [r for r in missing if row_key(r) in prev_present]
+    rest = [r for r in missing if row_key(r) not in prev_present]
+    shrank = prev_library_size and library_size < 0.9 * prev_library_size
+    too_many = len(vanished) > max(5, len(prev_present) // 10)
+    return rest, vanished, accept or not (shrank or too_many)
 
 
 def write_playlists(api, user, per_list):
@@ -388,17 +438,49 @@ def apply_upgrade(settings, song, flac_path):
 def run_once(settings, state):
     started = dt.datetime.now()
     api = matcher.Subsonic(settings.nd_url, settings.nd_user, settings.nd_password, client=CLIENT)
-    report = {'new_flac': [], 'new_lossy': [], 'upgraded': [], 'review': [], 'warnings': []}
+    report = {'new_flac': [], 'new_lossy': [], 'upgraded': [], 'review': [], 'warnings': [],
+              'liked': [], 'deleted': []}
 
     step = 'reading the library from Navidrome'
     try:
         api.call('ping')
         library = fetch_library(api)
+        deleted = load_deleted()
+
+        step = 'reading YouTube Music likes'
+        liked_rows = None
+        try:
+            got = ytm_likes.sync_likes(settings.ytm_auth_file, CONFIG / 'playlists' / f'{settings.ytm_playlist}.csv',
+                                       settings.ytm_recent, row_key, deleted, write=not settings.dry_run)
+        except Exception as e:  # likes are extra: never stop the run for them
+            log(traceback.format_exc())
+            report['warnings'].append(f'YouTube Music likes not read: {e}. If the sign-in expired, '
+                                      'make a new ytmusic-browser.json (docs/music-sync.md).')
+        else:
+            if got is not None:
+                liked_rows, report['liked'] = got
+
         playlists = load_playlists()
+        if liked_rows is not None:
+            playlists[settings.ytm_playlist] = liked_rows  # also covers the dry run, which writes nothing
         if not playlists:
             report['warnings'].append(f'No playlist CSVs in {CONFIG / "playlists"}')
         step = 'checking the playlists'
-        missing, in_playlists, _ = check_playlists(api, playlists)
+        missing, in_playlists, _, present = check_playlists(api, playlists)
+        missing = [r for r in missing if row_key(r) not in deleted]
+        prev_present = {tuple(k) for k in state.get('present', [])}
+        missing, vanished, safe = split_vanished(missing, prev_present, len(library),
+                                                 state.get('library_size', 0), settings.accept_deletions)
+        if vanished and safe:
+            report['deleted'] = vanished
+            if not settings.dry_run:
+                add_deleted(vanished, started.date().isoformat())
+        elif vanished:
+            report['warnings'].append(
+                f'{len(vanished)} playlist songs vanished from the library at once (library '
+                f"{state.get('library_size', 0)} -> {len(library)} songs). Not downloading them and not marking "
+                'them deleted. Check the music disk. If you deleted them on purpose: '
+                'docker exec music-sync python3 /app/music_sync.py --once --accept-deletions')
 
         real = [s for s in library if str(s.get('path', '')).startswith(str(MUSIC) + '/')]
         # Count lossy songs from the whole library; upgrading needs the real path.
@@ -424,6 +506,9 @@ def run_once(settings, state):
                    f'Playlist songs missing: {len(missing)}',
                    f'Upgrades this run: {len(upgrades)} of {len(lossy_all)} lossy' if real
                    else 'Upgrades this run: off (no real file paths)']
+        if liked_rows is not None:
+            summary.append(f'YouTube Music likes: {len(report["liked"])} new, '
+                           f'{len(liked_rows)} in {settings.ytm_playlist}')
         if real and settings.new_song_days > 0:
             summary.append(f'Added in the last {settings.new_song_days} days, upgraded first: {new_due}')
         if skipped:
@@ -431,6 +516,10 @@ def run_once(settings, state):
 
         if settings.dry_run:
             lines = [f'<b>Music sync (dry run)</b> · {started:%d %b %H:%M}'] + summary
+            if report['liked']:
+                lines += ['', 'Would add these new likes:'] + song_list(report['liked'])
+            if report['deleted']:
+                lines += ['', 'Would mark as deleted by you:'] + song_list(report['deleted'])
             lines += ['', 'Would look for:'] + song_list(missing)
             if upgrade_rows:
                 lines += ['', 'Would try to upgrade:'] + song_list(upgrade_rows)
@@ -527,8 +616,10 @@ def run_once(settings, state):
                 report['warnings'].append('Navidrome scan did not finish within 30 minutes')
         step = 'rebuilding the playlists'
         if playlists:
-            missing_after, _, per_list = check_playlists(api, playlists)
+            missing_after, _, per_list, present = check_playlists(api, playlists)
             write_playlists(api, settings.nd_user, per_list)
+            missing_after = [r for r in missing_after if row_key(r) not in deleted
+                             and r not in report['deleted']]
             summary[1] = f'Playlist songs missing: {len(missing_after)}'
         if changed:
             library = fetch_library(api)
@@ -536,6 +627,11 @@ def run_once(settings, state):
                          and not in_skip_dir(settings, s)]
             summary[0] = f'Library: {len(library)} songs, {len(lossy_now)} lossy'
             summary[2] = f'Lossy songs left to upgrade: {len(lossy_now)}'
+        # What is in the library now, for spotting songs deleted by hand next run.
+        # After a blocked run, keep the old set too, so those songs are checked again.
+        keep = prev_present if (vanished and not safe) else set()
+        state['present'] = sorted(present | keep)
+        state['library_size'] = len(library) if (safe or not vanished) else state.get('library_size', 0)
 
         since = state.setdefault('since_summary', {})
         for k in ('new_flac', 'new_lossy', 'upgraded'):
@@ -543,10 +639,17 @@ def run_once(settings, state):
         since['runs'] = since.get('runs', 0) + 1
 
         took = (dt.datetime.now() - started).total_seconds() / 60
-        if changed or report['review'] or report['warnings']:
+        if changed or report['review'] or report['warnings'] or report['liked'] or report['deleted']:
             lines = [f'<b>Music sync</b> · {started:%d %b %H:%M} · {took:.0f} min',
                      f"New FLAC: {len(report['new_flac'])}   New {settings.lossy_min_kbps}: "
                      f"{len(report['new_lossy'])}   Upgraded: {len(report['upgraded'])}"] + summary
+            if report['liked']:
+                lines += ['', f'New YouTube Music likes, added to {esc(settings.ytm_playlist)}:']
+                lines += song_list(report['liked'])
+            if report['deleted']:
+                lines += ['', 'Deleted by you, will not be downloaded again '
+                              '(undo: remove the line from /configs/music-sync/deleted.csv):']
+                lines += song_list(report['deleted'])
             for title, key in (('New FLAC', 'new_flac'), (f'New {settings.lossy_min_kbps} kbps', 'new_lossy'),
                                ('Upgraded to FLAC (old file in /data/music-retired)', 'upgraded')):
                 if report[key]:
@@ -586,6 +689,7 @@ def main():
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     settings = Settings()
+    settings.accept_deletions = '--accept-deletions' in sys.argv
     CONFIG.mkdir(parents=True, exist_ok=True)
     (CONFIG / 'playlists').mkdir(exist_ok=True)
     once = '--once' in sys.argv

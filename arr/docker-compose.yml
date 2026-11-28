@@ -279,6 +279,7 @@ services:
         SOCKSEEK_VERSION: ${SOCKSEEK_VERSION:?set in version.env}
         SOCKSEEK_COMMIT: ${SOCKSEEK_COMMIT:?set in version.env}
         MUTAGEN_VERSION: ${MUTAGEN_VERSION:?set in version.env}
+        YTMUSICAPI_VERSION: ${YTMUSICAPI_VERSION:?set in version.env}
     image: druv/music-sync:sockseek-${SOCKSEEK_VERSION:?set in version.env}
     pull_policy: build
     container_name: music-sync

@@ -20,14 +20,15 @@ RUN git clone --depth 1 --branch "${SOCKSEEK_VERSION}" https://github.com/fiso64
 
 FROM ${PYTHON_IMAGE}
 ARG MUTAGEN_VERSION
+ARG YTMUSICAPI_VERSION
 # libicu: .NET needs it for text handling. tini: forwards stop signals to the
 # job, which stops Sockseek cleanly.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends libicu72 tini \
     && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir "mutagen==${MUTAGEN_VERSION}"
+    && pip install --no-cache-dir "mutagen==${MUTAGEN_VERSION}" "ytmusicapi==${YTMUSICAPI_VERSION}"
 COPY --from=sockseek /out/sockseek /usr/local/bin/sockseek
-COPY music_sync.py navidrome_playlists.py /app/
+COPY music_sync.py navidrome_playlists.py ytm_likes.py /app/
 ENV PYTHONUNBUFFERED=1 HOME=/tmp
 USER 1000:1000
 ENTRYPOINT ["/usr/bin/tini", "--", "python3", "/app/music_sync.py"]
