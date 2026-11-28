@@ -26,6 +26,23 @@ services:
     restart: unless-stopped
     ports:
       - 8085:8080
+  # Bookmark manager, replaces Raindrop. See tools/linkding/README.md.
+  linkding:
+    image: sissbruecker/linkding:${LINKDING_VERSION:?set in version.env}
+    container_name: linkding
+    logging: *default-logging
+    restart: unless-stopped
+    ports:
+      - 9090:9090
+    volumes:
+      # Under /configs, so Backrest backs it up.
+      - /configs/linkding:/etc/linkding/data
+    environment:
+      - LD_SUPERUSER_NAME=${LINKDING_SUPERUSER_NAME}
+      - LD_SUPERUSER_PASSWORD=${LINKDING_SUPERUSER_PASSWORD}
+      - LD_CSRF_TRUSTED_ORIGINS=https://bookmarks.prinzpiuz.in
+      # Seconds. A large Raindrop import can take longer than the 60 s default.
+      - LD_REQUEST_TIMEOUT=300
   SnapOtter:
     image: snapotter/snapotter:${SNAPOTTER_VERSION:?set in version.env}
     container_name: snapotter
