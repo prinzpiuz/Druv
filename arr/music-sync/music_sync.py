@@ -24,6 +24,9 @@ deleted by hand. It is written to deleted.csv and never downloaded again.
 If many songs vanish at once (a disk or scan problem, not a person), nothing
 is marked and a warning is sent; --accept-deletions marks them anyway.
 
+Songs you add to the Navidrome playlists "Delete" and "Wrong" are handled
+every MARKS_INTERVAL_MINUTES and at the start of each run (marks.py).
+
 SYNC_DRY_RUN=true (the default) does steps 1-2 and reports what it would do.
 Run once and exit: music_sync.py --once
 """
@@ -44,6 +47,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+import marks
 import navidrome_playlists as matcher
 import ytm_likes
 
@@ -112,6 +116,12 @@ class Settings:
         self.ytm_playlist = setting('YTM_LIKES_PLAYLIST', 'Liked')
         # After the first run, read only this many of the newest likes.
         self.ytm_recent = setting('YTM_LIKES_RECENT', 200, int)
+        # Navidrome playlists you add songs to, to delete or replace them (marks.py).
+        self.delete_playlist = setting('DELETE_PLAYLIST', 'Delete')
+        self.wrong_playlist = setting('WRONG_PLAYLIST', 'Wrong')
+        self.marks_interval_min = setting('MARKS_INTERVAL_MINUTES', 5.0, float)
+        # Searches per Wrong song per run (each skips the senders of earlier wrong files).
+        self.wrong_max_tries = setting('WRONG_MAX_TRIES', 3, int)
 
 
 def log(msg):
@@ -191,15 +201,16 @@ def row_key(row):
 
 def check_playlists(api, playlists):
     """Returns (missing rows, ids of matched songs, {playlist: [song ids]},
-    keys of the rows found in the library)."""
-    missing, matched_ids, per_list, present = {}, set(), {}, set()
+    {row key: {id, row}} for the rows found in the library)."""
+    missing, matched_ids, per_list, present = {}, set(), {}, {}
     for name, rows in playlists.items():
         ids = []
         for row in rows:
             song, _ = matcher.find(api, row, 0.8)
             if song:
                 matched_ids.add(song['id'])
-                present.add(row_key(row))
+                present[marks.key_str(row_key(row))] = {
+                    'id': song['id'], 'row': {k: row.get(k, '') for k in ('Artist', 'Title', 'Album')}}
                 if song['id'] not in ids:
                     ids.append(song['id'])
             else:
@@ -229,6 +240,14 @@ def add_deleted(rows, when):
         if new:
             w.writeheader()
         w.writerows(dict(r, Deleted=when) for r in rows)
+
+
+def present_keys(state):
+    """Row keys found on the last run. Older state files kept a plain list."""
+    p = state.get('present', {})
+    if isinstance(p, list):
+        return {tuple(k) for k in p}
+    return {tuple(k.split('\x1f')) for k in p}
 
 
 def split_vanished(missing, prev_present, library_size, prev_library_size, accept):
@@ -329,6 +348,7 @@ def run_sockseek(settings, csv_path, out_dir, index_path, extra):
     finally:
         timer.cancel()
         _child = None
+    marks.record_sources(sys.modules[__name__])  # who sent each new file, for the Wrong playlist
     if _stop:
         raise Stopped()
     return code, timed_out.is_set()
@@ -439,12 +459,18 @@ def run_once(settings, state):
     started = dt.datetime.now()
     api = matcher.Subsonic(settings.nd_url, settings.nd_user, settings.nd_password, client=CLIENT)
     report = {'new_flac': [], 'new_lossy': [], 'upgraded': [], 'review': [], 'warnings': [],
-              'liked': [], 'deleted': []}
+              'liked': [], 'deleted': [], 'marks': []}
 
     step = 'reading the library from Navidrome'
     try:
         api.call('ping')
         library = fetch_library(api)
+
+        step = 'handling the Delete and Wrong playlists'
+        if not settings.dry_run:
+            report['marks'] = marks.process(sys.modules[__name__], settings, state, api)
+            if report['marks']:
+                library = fetch_library(api)
         deleted = load_deleted()
 
         step = 'reading YouTube Music likes'
@@ -467,8 +493,10 @@ def run_once(settings, state):
             report['warnings'].append(f'No playlist CSVs in {CONFIG / "playlists"}')
         step = 'checking the playlists'
         missing, in_playlists, _, present = check_playlists(api, playlists)
-        missing = [r for r in missing if row_key(r) not in deleted]
-        prev_present = {tuple(k) for k in state.get('present', [])}
+        wrong_keys = {tuple(k.split('\x1f')) for k in state.get('wrong', {})}
+        # Wrong songs are searched for separately, with their bans (marks.retry_wrong).
+        missing = [r for r in missing if row_key(r) not in deleted and row_key(r) not in wrong_keys]
+        prev_present = present_keys(state)
         missing, vanished, safe = split_vanished(missing, prev_present, len(library),
                                                  state.get('library_size', 0), settings.accept_deletions)
         if vanished and safe:
@@ -538,6 +566,10 @@ def run_once(settings, state):
         STAGING.mkdir(exist_ok=True)
         problems = []
 
+        if state.get('wrong'):
+            step = 'searching again for songs marked Wrong'
+            report['marks'] += marks.retry_wrong(sys.modules[__name__], settings, state, api)
+
         def note(name, result):
             code, timed_out = result
             if timed_out:
@@ -605,11 +637,16 @@ def run_once(settings, state):
                 if ok:
                     report['upgraded'].append(row)
                     attempts.pop(song['id'], None)
+                    src = marks.load_sources(sys.modules[__name__]).get(str(Path(fp)))
+                    if src:  # the FLAC now sits at the old path, with .flac
+                        marks.add_sources(sys.modules[__name__], [{
+                            'path': str(Path(song['path']).with_suffix('.flac')), 'user': src[0], 'remote': src[1]}])
                 else:
                     report['review'].append(dict(row, Reason=reason, File=fp))
         report['warnings'] += [p + ' (details: /configs/music-sync/sockseek.log)' for p in problems]
 
-        changed = report['new_flac'] or report['new_lossy'] or report['upgraded']
+        changed = (report['new_flac'] or report['new_lossy'] or report['upgraded']
+                   or any(line.startswith('Replaced') for line in report['marks']))
         if changed:
             step = 'scanning in Navidrome'
             if not scan_and_wait(api):
@@ -629,8 +666,8 @@ def run_once(settings, state):
             summary[2] = f'Lossy songs left to upgrade: {len(lossy_now)}'
         # What is in the library now, for spotting songs deleted by hand next run.
         # After a blocked run, keep the old set too, so those songs are checked again.
-        keep = prev_present if (vanished and not safe) else set()
-        state['present'] = sorted(present | keep)
+        keep = state.get('present', {}) if (vanished and not safe and isinstance(state.get('present'), dict)) else {}
+        state['present'] = {**keep, **present}
         state['library_size'] = len(library) if (safe or not vanished) else state.get('library_size', 0)
 
         since = state.setdefault('since_summary', {})
@@ -639,13 +676,16 @@ def run_once(settings, state):
         since['runs'] = since.get('runs', 0) + 1
 
         took = (dt.datetime.now() - started).total_seconds() / 60
-        if changed or report['review'] or report['warnings'] or report['liked'] or report['deleted']:
+        if (changed or report['review'] or report['warnings'] or report['liked'] or report['deleted']
+                or report['marks']):
             lines = [f'<b>Music sync</b> · {started:%d %b %H:%M} · {took:.0f} min',
                      f"New FLAC: {len(report['new_flac'])}   New {settings.lossy_min_kbps}: "
                      f"{len(report['new_lossy'])}   Upgraded: {len(report['upgraded'])}"] + summary
             if report['liked']:
                 lines += ['', f'New YouTube Music likes, added to {esc(settings.ytm_playlist)}:']
                 lines += song_list(report['liked'])
+            if report['marks']:
+                lines += ['', 'Delete and Wrong playlists (files in /data/music-retired):'] + report['marks']
             if report['deleted']:
                 lines += ['', 'Deleted by you, will not be downloaded again '
                               '(undo: remove the line from /configs/music-sync/deleted.csv):']
@@ -710,8 +750,40 @@ def main():
         if once:
             break
         wake = time.time() + settings.interval_h * 3600
+        next_marks = time.time() + settings.marks_interval_min * 60
         while not _stop and time.time() < wake:
-            time.sleep(min(30, wake - time.time()))
+            time.sleep(max(1, min(30, wake - time.time())))
+            if not settings.dry_run and settings.marks_interval_min > 0 and time.time() >= next_marks:
+                next_marks = time.time() + settings.marks_interval_min * 60
+                check_marks(settings)
+
+
+def check_marks(settings):
+    """Between runs: handle the Delete and Wrong playlists, if nothing else runs."""
+    with open(CONFIG / 'run.lock', 'w') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return
+        state = load_state()
+        api = matcher.Subsonic(settings.nd_url, settings.nd_user, settings.nd_password, client=CLIENT)
+        try:
+            me = sys.modules[__name__]
+            lines = marks.process(me, settings, state, api)
+            if any(line.startswith('Wrong') for line in lines):
+                (CONFIG / 'run').mkdir(exist_ok=True)
+                lines += marks.retry_wrong(me, settings, state, api)
+                if any(line.startswith('Replaced') for line in lines):
+                    scan_and_wait(api)
+        except Stopped:
+            return
+        except Exception as e:
+            log(traceback.format_exc())
+            lines = [f'Error: {esc(e)}']
+        finally:
+            save_state(state)
+        if lines:
+            telegram(settings, '\n'.join(['<b>Music sync</b> · Delete and Wrong playlists'] + lines))
 
 
 if __name__ == '__main__':

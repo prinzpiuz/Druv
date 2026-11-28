@@ -104,7 +104,7 @@ From my homelab, I have made a few services available to the public under [prinz
 4. scans, rebuilds the playlists and reports to the ops Telegram chat.
 
 It starts in dry-run mode (`MUSIC_SYNC_DRY_RUN=true` in `arr/.env`). Logs: `docker logs music-sync`. Run it once now: `docker exec music-sync python3 /app/music_sync.py --once`.
-Songs you like in YouTube Music are added to the `Liked` playlist after a one-time sign-in setup. Songs you delete by hand are not downloaded again.
+Songs you like in YouTube Music are added to the `Liked` playlist after a one-time sign-in setup. To remove a song, add it to the Navidrome playlist `Delete`. To replace a wrong download, add it to `Wrong`: music-sync searches again without the user who sent it. Removed files go to `/data/music-retired`.
 How it works, its files and settings, and troubleshooting: [docs/music-sync.md](docs/music-sync.md).
 
 ---
